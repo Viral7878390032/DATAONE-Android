@@ -2,6 +2,8 @@ package com.example.feature.telegram.bridge
 
 import android.util.Log
 import com.example.feature.telegram.model.TelegramAuthState
+import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramMessage
 import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +30,12 @@ class NativeTdLibBridge : TelegramClientBridge {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _authState = MutableStateFlow<TelegramAuthState>(TelegramAuthState.Uninitialized)
     override val authState: StateFlow<TelegramAuthState> = _authState.asStateFlow()
+
+    private val _chats = MutableStateFlow<List<TelegramChat>>(emptyList())
+    override val chats: StateFlow<List<TelegramChat>> = _chats.asStateFlow()
+    private val _messages = MutableStateFlow<List<TelegramMessage>>(emptyList())
+    override val messages: StateFlow<List<TelegramMessage>> = _messages.asStateFlow()
+    @Volatile private var selectedChatId: Long? = null
 
     private val nativeLoaded = AtomicBoolean(false)
     override val isNativeLibraryAvailable: Boolean
@@ -69,8 +77,16 @@ class NativeTdLibBridge : TelegramClientBridge {
                 _authState.value = TelegramAuthState.Connecting
                 client = Client.create(
                     { update ->
-                        if (update is TdApi.UpdateAuthorizationState) {
-                            scope.launch { handleAuthorizationState(update.authorizationState) }
+                        when (update) {
+                            is TdApi.UpdateAuthorizationState ->
+                                scope.launch { handleAuthorizationState(update.authorizationState) }
+                            is TdApi.UpdateNewChat -> scope.launch { refreshChats() }
+                            is TdApi.UpdateChatLastMessage -> scope.launch { refreshChats() }
+                            is TdApi.UpdateNewMessage -> {
+                                if (update.message.chatId == selectedChatId) {
+                                    scope.launch { openChat(update.message.chatId) }
+                                } else scope.launch { refreshChats() }
+                            }
                         }
                     },
                     { error -> Log.e(tag, "TDLib update callback failed.", error) },
@@ -147,9 +163,11 @@ class NativeTdLibBridge : TelegramClientBridge {
                             id = me.id,
                             firstName = me.firstName,
                             lastName = me.lastName,
+                            username = me.usernames?.activeUsernames?.firstOrNull(),
                             phoneNumber = me.phoneNumber
                         )
                     )
+                    refreshChats()
                 }
                 is TdApi.AuthorizationStateLoggingOut -> _authState.value = TelegramAuthState.Closing
                 is TdApi.AuthorizationStateClosing -> _authState.value = TelegramAuthState.Closing
@@ -215,6 +233,38 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun sendRegistration(firstName: String, lastName: String): Result<Unit> {
         if (firstName.isBlank()) return Result.failure(IllegalArgumentException("First name is required."))
         return runRequest { TdApi.RegisterUser(firstName.trim(), lastName.trim(), false) }
+    }
+
+    override suspend fun refreshChats(): Result<Unit> = try {
+        val result = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 100)) as TdApi.Chats
+        val loaded = result.chatIds.mapNotNull { id ->
+            try {
+                val chat = sendRequest(TdApi.GetChat(id)) as TdApi.Chat
+                TelegramChat(id = chat.id, title = chat.title, lastMessage = chat.lastMessage?.let { messagePreview(it.content) } ?: "No messages yet", unreadCount = chat.unreadCount)
+            } catch (_: Throwable) { null }
+        }
+        _chats.value = loaded
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun openChat(chatId: Long): Result<Unit> = try {
+        selectedChatId = chatId
+        val result = sendRequest(TdApi.GetChatHistory(chatId, 0, 0, 50, false)) as TdApi.Messages
+        _messages.value = result.messages.reversed().map { message ->
+            TelegramMessage(id = message.id, chatId = message.chatId, text = messagePreview(message.content), date = message.date, isOutgoing = message.isOutgoing)
+        }
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    private fun messagePreview(content: TdApi.MessageContent): String = when (content) {
+        is TdApi.MessageText -> content.text.text
+        is TdApi.MessagePhoto -> "Photo"
+        is TdApi.MessageVideo -> "Video"
+        is TdApi.MessageDocument -> content.document.fileName.ifBlank { "File" }
+        is TdApi.MessageVoiceNote -> "Voice message"
+        is TdApi.MessageAnimation -> "GIF"
+        is TdApi.MessageSticker -> "Sticker"
+        else -> "Message"
     }
 
     override suspend fun downloadFileOnDemand(fileId: Int, priority: Int): Result<Unit> {

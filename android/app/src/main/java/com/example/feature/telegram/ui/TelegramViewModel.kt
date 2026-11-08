@@ -72,6 +72,15 @@ class TelegramViewModel(
         }
     }
 
+    fun toggleChatMarkedUnread(chatId: Long, isMarkedAsUnread: Boolean) {
+        viewModelScope.launch {
+            val result = repository.toggleChatMarkedUnread(chatId, isMarkedAsUnread)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to update unread status.") }
+            }
+        }
+    }
+
     fun openChat(chatId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingChats = true, selectedChatId = chatId, errorMessage = null) }

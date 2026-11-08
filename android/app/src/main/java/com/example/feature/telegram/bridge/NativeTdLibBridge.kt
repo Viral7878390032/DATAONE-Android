@@ -288,6 +288,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                 TdApi.ViewMessages(
                     chatId,
                     result.messages.map { it.id }.toLongArray(),
+                    null,
                     true
                 )
             )

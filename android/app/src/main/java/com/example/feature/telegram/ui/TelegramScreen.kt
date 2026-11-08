@@ -6,6 +6,9 @@ import androidx.compose.animation.fadeOut
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.BitmapFactory
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.widget.Toast
 import android.media.MediaPlayer
 import android.provider.OpenableColumns
 import android.widget.MediaController
@@ -43,6 +46,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
@@ -1017,9 +1021,32 @@ private fun AuthenticatedUserCard(
                                             TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
                                         }
                                         if (message.text.isNotBlank()) {
-                                            Text(message.text, color = TextPrimary, modifier = Modifier.padding(top = if (message.mediaType == "photo") 6.dp else 0.dp), fontSize = 14.sp)
-                                        } else if (message.mediaType != "photo") {
-                                            Text(message.text, color = TextPrimary, fontSize = 14.sp)
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(top = if (message.mediaType == "photo") 6.dp else 0.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    message.text,
+                                                    color = TextPrimary,
+                                                    fontSize = 14.sp,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                IconButton(
+                                                    onClick = {
+                                                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                        clipboard.setPrimaryClip(ClipData.newPlainText("Telegram message", message.text))
+                                                        Toast.makeText(context, "Message copied", Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.ContentCopy,
+                                                        contentDescription = "Copy message",
+                                                        tint = TextSecondary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }

@@ -261,7 +261,8 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     title = chat.title,
                                     lastMessage = chat.lastMessage?.let { messagePreview(it.content) } ?: "No messages yet",
                                     lastMessageDate = chat.lastMessage?.date ?: 0,
-                                    unreadCount = chat.unreadCount
+                                    unreadCount = chat.unreadCount,
+                                    isPinned = chat.positions.any { it.list is TdApi.ChatListMain && it.isPinned }
                                 )
                             } catch (error: Throwable) {
                                 Log.w(tag, "Could not load Telegram chat $id", error)
@@ -278,6 +279,14 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit> = try {
+        sendRequest(TdApi.ToggleChatIsPinned(TdApi.ChatListMain(), chatId, isPinned))
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
 
     override suspend fun openChat(chatId: Long): Result<Unit> = try {
         selectedChatId = chatId

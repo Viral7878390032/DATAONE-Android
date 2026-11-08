@@ -267,7 +267,8 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     unreadCount = chat.unreadCount,
                                     isPinned = chat.positions.any { it.list is TdApi.ChatListMain && it.isPinned },
                                     isMarkedAsUnread = chat.isMarkedAsUnread,
-                                    isArchived = chat.id in archivedIds
+                                    isArchived = chat.id in archivedIds,
+                                    isMuted = chat.notificationSettings.muteFor > 0
                                 )
                             } catch (error: Throwable) {
                                 Log.w(tag, "Could not load Telegram chat $id", error)
@@ -304,6 +305,18 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun toggleChatArchived(chatId: Long, isArchived: Boolean): Result<Unit> = try {
         val destination = if (isArchived) TdApi.ChatListArchive() else TdApi.ChatListMain()
         sendRequest(TdApi.AddChatToList(chatId, destination))
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
+
+    override suspend fun toggleChatMuted(chatId: Long, isMuted: Boolean): Result<Unit> = try {
+        val chat = sendRequest(TdApi.GetChat(chatId)) as TdApi.Chat
+        val settings = chat.notificationSettings
+        settings.useDefaultMuteFor = false
+        settings.muteFor = if (isMuted) 31_708_800 else 0
+        sendRequest(TdApi.SetChatNotificationSettings(chatId, settings))
         refreshChats()
         Result.success(Unit)
     } catch (error: Throwable) {

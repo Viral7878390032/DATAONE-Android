@@ -91,6 +91,15 @@ class TelegramViewModel(
         }
     }
 
+    fun toggleChatMuted(chatId: Long, isMuted: Boolean) {
+        viewModelScope.launch {
+            val result = repository.toggleChatMuted(chatId, isMuted)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to update chat notifications.") }
+            }
+        }
+    }
+
     fun openChat(chatId: Long) {
         viewModelScope.launch {
             _uiState.update { current ->

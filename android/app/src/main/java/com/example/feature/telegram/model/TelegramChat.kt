@@ -8,5 +8,6 @@ data class TelegramChat(
     val unreadCount: Int,
     val isPinned: Boolean = false,
     val isMarkedAsUnread: Boolean = false,
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    val isMuted: Boolean = false
 )

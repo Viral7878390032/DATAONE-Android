@@ -273,6 +273,7 @@ fun TelegramScreen(
                         onToggleChatPinned = { chatId, isPinned -> viewModel.toggleChatPinned(chatId, isPinned) },
                         onToggleChatMarkedUnread = { chatId, marked -> viewModel.toggleChatMarkedUnread(chatId, marked) },
                         onToggleChatArchived = { chatId, archived -> viewModel.toggleChatArchived(chatId, archived) },
+                        onToggleChatMuted = { chatId, muted -> viewModel.toggleChatMuted(chatId, muted) },
                         onOpenChat = { viewModel.openChat(it) },
                         onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
@@ -724,6 +725,7 @@ private fun AuthenticatedUserCard(
     onToggleChatPinned: (Long, Boolean) -> Unit,
     onToggleChatMarkedUnread: (Long, Boolean) -> Unit,
     onToggleChatArchived: (Long, Boolean) -> Unit,
+    onToggleChatMuted: (Long, Boolean) -> Unit,
     onOpenChat: (Long) -> Unit,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
@@ -950,6 +952,12 @@ private fun AuthenticatedUserCard(
                                             color = if (chat.isMarkedAsUnread) TelegramBlue else TextMuted,
                                             fontSize = 11.sp
                                         )
+                                    }
+                                    TextButton(
+                                        onClick = { onToggleChatMuted(chat.id, !chat.isMuted) },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                    ) {
+                                        Text(if (chat.isMuted) "Unmute" else "Mute", color = if (chat.isMuted) TelegramBlue else TextMuted, fontSize = 11.sp)
                                     }
                                     TextButton(
                                         onClick = { onToggleChatArchived(chat.id, !chat.isArchived) },

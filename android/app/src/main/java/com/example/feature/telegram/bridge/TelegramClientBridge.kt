@@ -79,6 +79,7 @@ interface TelegramClientBridge {
     suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit>
     suspend fun toggleChatMarkedUnread(chatId: Long, isMarkedAsUnread: Boolean): Result<Unit>
     suspend fun toggleChatArchived(chatId: Long, isArchived: Boolean): Result<Unit>
+    suspend fun toggleChatMuted(chatId: Long, isMuted: Boolean): Result<Unit>
 
     suspend fun openChat(chatId: Long): Result<Unit>
     suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit>

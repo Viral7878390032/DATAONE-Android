@@ -59,6 +59,7 @@ interface TelegramRepository {
     suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit>
     suspend fun toggleChatMarkedUnread(chatId: Long, isMarkedAsUnread: Boolean): Result<Unit>
     suspend fun toggleChatArchived(chatId: Long, isArchived: Boolean): Result<Unit>
+    suspend fun toggleChatMuted(chatId: Long, isMuted: Boolean): Result<Unit>
     fun loadChatDrafts(): Map<Long, String>
     fun saveChatDrafts(drafts: Map<Long, String>)
     fun clearChatDrafts()

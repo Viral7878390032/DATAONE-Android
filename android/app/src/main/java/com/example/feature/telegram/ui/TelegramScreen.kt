@@ -967,7 +967,18 @@ private fun AuthenticatedUserCard(
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(chat.lastMessage, color = TextSecondary, fontSize = 13.sp, maxLines = 1)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(chat.lastMessage, color = TextSecondary, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                                        if (chat.unreadMentionCount > 0) {
+                                            Text(
+                                                "@ ${chat.unreadMentionCount}",
+                                                color = Color.White,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(8.dp)).background(TelegramBlue).padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     TextButton(

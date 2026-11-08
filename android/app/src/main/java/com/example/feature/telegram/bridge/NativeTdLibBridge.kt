@@ -268,7 +268,8 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     isPinned = chat.positions.any { it.list is TdApi.ChatListMain && it.isPinned },
                                     isMarkedAsUnread = chat.isMarkedAsUnread,
                                     isArchived = chat.id in archivedIds,
-                                    isMuted = chat.notificationSettings.muteFor > 0
+                                    isMuted = chat.notificationSettings.muteFor > 0,
+                                    unreadMentionCount = chat.unreadMentionCount
                                 )
                             } catch (error: Throwable) {
                                 Log.w(tag, "Could not load Telegram chat $id", error)

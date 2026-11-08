@@ -70,6 +70,30 @@ class TelegramViewModel(
         _uiState.update { it.copy(passwordInput = newPassword, errorMessage = null) }
     }
 
+    fun onRegistrationFirstNameChanged(value: String) {
+        _uiState.update { it.copy(registrationFirstName = value, errorMessage = null) }
+    }
+
+    fun onRegistrationLastNameChanged(value: String) {
+        _uiState.update { it.copy(registrationLastName = value, errorMessage = null) }
+    }
+
+    fun submitRegistration() {
+        val firstName = _uiState.value.registrationFirstName.trim()
+        val lastName = _uiState.value.registrationLastName.trim()
+        if (firstName.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Enter your first name to continue.") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val result = repository.submitRegistration(firstName, lastName)
+            result.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false, errorMessage = error.message ?: "Registration failed.") }
+            }
+        }
+    }
+
     fun togglePasswordVisibility() {
         _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
     }
@@ -133,7 +157,9 @@ class TelegramViewModel(
                     isLoading = false,
                     phoneInput = "",
                     codeInput = "",
-                    passwordInput = ""
+                    passwordInput = "",
+                    registrationFirstName = "",
+                    registrationLastName = ""
                 )
             }
         }

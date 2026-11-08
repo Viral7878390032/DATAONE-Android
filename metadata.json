@@ -1,0 +1,6 @@
+{
+  "name": "DATAONE - Telegram TDLib Integration Foundation",
+  "description": "Architecture foundation, Kotlin Jetpack Compose implementation, and interactive validation studio for DATAONE Telegram TDLib integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

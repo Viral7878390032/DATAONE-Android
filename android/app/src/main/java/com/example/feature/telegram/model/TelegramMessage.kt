@@ -5,5 +5,10 @@ data class TelegramMessage(
     val chatId: Long,
     val text: String,
     val date: Int,
-    val isOutgoing: Boolean
+    val isOutgoing: Boolean,
+    val mediaType: String? = null,
+    val mediaFileId: Int? = null,
+    val mediaFilePath: String? = null,
+    val isMediaDownloaded: Boolean = false,
+    val isMediaDownloading: Boolean = false
 )

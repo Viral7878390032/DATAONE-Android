@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.drinkless.tdlib.Client
@@ -85,6 +86,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                         when (update) {
                             is TdApi.UpdateAuthorizationState ->
                                 scope.launch { handleAuthorizationState(update.authorizationState) }
+                            is TdApi.UpdateFile -> updateMessageFile(update.file)
                             is TdApi.UpdateNewChat -> scope.launch { refreshChats() }
                             is TdApi.UpdateChatLastMessage -> scope.launch { refreshChats() }
                             is TdApi.UpdateNewMessage -> {
@@ -278,9 +280,7 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun openChat(chatId: Long): Result<Unit> = try {
         selectedChatId = chatId
         val result = sendRequest(TdApi.GetChatHistory(chatId, 0, 0, 50, false)) as TdApi.Messages
-        _messages.value = result.messages.reversed().map { message ->
-            TelegramMessage(id = message.id, chatId = message.chatId, text = messagePreview(message.content), date = message.date, isOutgoing = message.isOutgoing)
-        }
+        _messages.value = result.messages.reversed().map(::toTelegramMessage)
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 
@@ -297,6 +297,46 @@ class NativeTdLibBridge : TelegramClientBridge {
         openChat(chatId)
     } catch (error: Throwable) {
         Result.failure(error)
+    }
+
+    private fun toTelegramMessage(message: TdApi.Message): TelegramMessage {
+        val photoFile = (message.content as? TdApi.MessagePhoto)
+            ?.photo
+            ?.sizes
+            ?.maxByOrNull { size -> size.width.toLong() * size.height.toLong() }
+            ?.photo
+        val localFile = photoFile?.local
+        val caption = (message.content as? TdApi.MessagePhoto)?.caption?.text.orEmpty()
+        return TelegramMessage(
+            id = message.id,
+            chatId = message.chatId,
+            text = when (message.content) {
+                is TdApi.MessageText -> messagePreview(message.content)
+                is TdApi.MessagePhoto -> caption
+                else -> messagePreview(message.content)
+            },
+            date = message.date,
+            isOutgoing = message.isOutgoing,
+            mediaType = if (photoFile != null) "photo" else null,
+            mediaFileId = photoFile?.id,
+            mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },
+            isMediaDownloaded = localFile?.isDownloadingCompleted == true,
+            isMediaDownloading = localFile?.isDownloadingActive == true
+        )
+    }
+
+    private fun updateMessageFile(file: TdApi.File) {
+        _messages.update { current ->
+            current.map { message ->
+                if (message.mediaFileId == file.id) {
+                    message.copy(
+                        mediaFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() },
+                        isMediaDownloaded = file.local.isDownloadingCompleted,
+                        isMediaDownloading = file.local.isDownloadingActive
+                    )
+                } else message
+            }
+        }
     }
 
     private fun messagePreview(content: TdApi.MessageContent): String = when (content) {

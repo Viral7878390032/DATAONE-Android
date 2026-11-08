@@ -3,6 +3,8 @@ package com.example.feature.telegram.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -60,10 +63,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +81,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramUser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // Premium Dark Theme Palette for DATAONE Telegram Module
 private val BackgroundDark = Color(0xFF0B111A)
@@ -232,6 +240,7 @@ fun TelegramScreen(
                         messageDraft = uiState.messageDraft,
                         onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
                         onSendMessage = { viewModel.sendMessage() },
+                        onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
                         onOpenChat = { viewModel.openChat(it) },
                         onCloseChat = { viewModel.closeChat() },
@@ -676,6 +685,7 @@ private fun AuthenticatedUserCard(
     messageDraft: String,
     onMessageDraftChange: (String) -> Unit,
     onSendMessage: () -> Unit,
+    onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
     onOpenChat: (Long) -> Unit,
     onCloseChat: () -> Unit,
@@ -777,7 +787,16 @@ private fun AuthenticatedUserCard(
                                     ),
                                     modifier = Modifier.fillMaxWidth(0.86f)
                                 ) {
-                                    Text(message.text, color = TextPrimary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp), fontSize = 14.sp)
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        if (message.mediaType == "photo") {
+                                            TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
+                                        }
+                                        if (message.text.isNotBlank()) {
+                                            Text(message.text, color = TextPrimary, modifier = Modifier.padding(top = if (message.mediaType == "photo") 6.dp else 0.dp), fontSize = 14.sp)
+                                        } else if (message.mediaType != "photo") {
+                                            Text(message.text, color = TextPrimary, fontSize = 14.sp)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -811,6 +830,66 @@ private fun AuthenticatedUserCard(
         }
     }
 }
+@Composable
+private fun TelegramPhotoContent(
+    message: com.example.feature.telegram.model.TelegramMessage,
+    onDownloadMedia: (Int) -> Unit
+) {
+    val photoBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null,
+        key1 = message.mediaFilePath
+    ) {
+        value = withContext(Dispatchers.IO) {
+            message.mediaFilePath
+                ?.takeIf { it.isNotBlank() }
+                ?.let { path -> BitmapFactory.decodeFile(path)?.asImageBitmap() }
+        }
+    }
+
+    if (photoBitmap != null) {
+        Image(
+            bitmap = photoBitmap!!,
+            contentDescription = "Telegram photo",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 280.dp)
+                .clip(RoundedCornerShape(12.dp))
+        )
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceCard)
+                .padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = if (message.isMediaDownloading) "Downloading photo..." else "Photo",
+                color = TextSecondary,
+                fontSize = 13.sp
+            )
+            if (message.isMediaDownloading) {
+                CircularProgressIndicator(
+                    color = TelegramBlue,
+                    modifier = Modifier.padding(top = 10.dp).size(22.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Button(
+                    onClick = { message.mediaFileId?.let(onDownloadMedia) },
+                    enabled = message.mediaFileId != null,
+                    modifier = Modifier.padding(top = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
+                ) {
+                    Text(if (message.isMediaDownloaded) "Retry photo" else "Download photo")
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun RegistrationCard(
     firstName: String,

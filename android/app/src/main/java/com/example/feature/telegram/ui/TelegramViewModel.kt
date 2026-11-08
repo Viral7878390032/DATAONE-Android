@@ -79,6 +79,15 @@ class TelegramViewModel(
         _uiState.update { it.copy(messageDraft = value) }
     }
 
+    fun downloadMessageMedia(fileId: Int) {
+        viewModelScope.launch {
+            val result = repository.requestMediaDownload(fileId)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to download photo.") }
+            }
+        }
+    }
+
     fun sendMessage() {
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()

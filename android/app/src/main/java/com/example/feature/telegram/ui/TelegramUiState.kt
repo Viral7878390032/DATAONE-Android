@@ -10,6 +10,8 @@ data class TelegramUiState(
     val phoneInput: String = "",
     val codeInput: String = "",
     val passwordInput: String = "",
+    val registrationFirstName: String = "",
+    val registrationLastName: String = "",
     val isPasswordVisible: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,

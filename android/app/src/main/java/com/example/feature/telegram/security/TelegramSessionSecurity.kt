@@ -75,8 +75,8 @@ class TelegramSessionSecurity(private val context: Context) {
      * Retrieves the configured Telegram API Hash.
      */
     fun getTelegramApiHash(): String? {
-        val encoded = BuildConfig.TELEGRAM_API_HASH_BASE64
-        if (encoded.isNotBlank()) return String(Base64.getDecoder().decode(encoded), Charsets.UTF_8)
+        val bundled = BuildConfig.TELEGRAM_API_HASH
+        if (bundled.isNotBlank()) return bundled
         val stored = encryptedPrefs.getString(KEY_API_HASH, null)
         return if (!stored.isNullOrBlank()) stored else null
     }

@@ -10,9 +10,9 @@ android {
 
     defaultConfig {
         val telegramApiId = System.getenv("TELEGRAM_API_ID")?.toIntOrNull() ?: 0
-        val telegramApiHashBase64 = java.util.Base64.getEncoder().encodeToString(System.getenv("TELEGRAM_API_HASH").orEmpty().toByteArray())
+        val telegramApiHash = System.getenv("TELEGRAM_API_HASH").orEmpty()
         buildConfigField("int", "TELEGRAM_API_ID", telegramApiId.toString())
-        buildConfigField("String", "TELEGRAM_API_HASH_BASE64", "$telegramApiHashBase64")
+        buildConfigField("String", "TELEGRAM_API_HASH", "\"$telegramApiHash\"")
         applicationId = "com.example.dataone"
         minSdk = 26
         targetSdk = 35

@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.weight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -147,8 +151,7 @@ fun TelegramScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .then(if (uiState.authState is TelegramAuthState.Authenticated) Modifier else Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Dynamic Authorization Card driven by TDLib AuthState
@@ -673,122 +676,112 @@ private fun AuthenticatedUserCard(
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
 ) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceCard,
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(TelegramBlue),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = user.firstName.take(1).uppercase(),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontSize = 18.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = user.displayName,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = user.handle,
-                        fontSize = 13.sp,
-                        color = TelegramBlue
-                    )
-                }
-
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Connected",
-                    tint = StatusSuccess,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
+    Surface(color = BackgroundDark, modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             if (selectedChatId == null) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text("Your Telegram chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    TextButton(onClick = onRefreshChats, enabled = !isLoadingChats) { Text("Refresh", color = TelegramBlue) }
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(44.dp).clip(CircleShape).background(TelegramBlue), contentAlignment = Alignment.Center) {
+                        Text(user.firstName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Telegram", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text(user.displayName, color = TextSecondary, fontSize = 12.sp, maxLines = 1)
+                    }
+                    IconButton(onClick = onRefreshChats, enabled = !isLoadingChats) {
+                        if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Default.Info, contentDescription = "Refresh chats", tint = TelegramBlue)
+                    }
                 }
-                if (isLoadingChats) {
-                    CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("All chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Text("${chats.size}", color = TextSecondary, fontSize = 12.sp)
+                }
+                if (chats.isEmpty() && isLoadingChats) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
                 } else if (chats.isEmpty()) {
-                    Text("No chats found yet. Pull Refresh to load again.", color = TextSecondary, fontSize = 13.sp)
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No chats found. Tap refresh to try again.", color = TextSecondary) }
                 } else {
-                    chats.forEach { chat ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(modifier = Modifier.size(42.dp).clip(CircleShape).background(TelegramBlue), contentAlignment = Alignment.Center) {
-                                Text(chat.title.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
+                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 12.dp)) {
+                        items(chats, key = { it.id }) { chat ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(horizontal = 16.dp, vertical = 11.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(modifier = Modifier.size(50.dp).clip(CircleShape).background(SurfaceCard), contentAlignment = Alignment.Center) {
+                                    Text(chat.title.take(1).uppercase(), color = TelegramBlue, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(chat.title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(chat.lastMessage, color = TextSecondary, fontSize = 13.sp, maxLines = 1)
+                                }
+                                if (chat.unreadCount > 0) {
+                                    Box(modifier = Modifier.clip(CircleShape).background(TelegramBlue).padding(horizontal = 7.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
+                                        Text(chat.unreadCount.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(chat.title, color = TextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                Text(chat.lastMessage, color = TextSecondary, fontSize = 12.sp, maxLines = 1)
-                            }
-                            if (chat.unreadCount > 0) Text(chat.unreadCount.toString(), color = Color.White, fontSize = 12.sp)
+                            androidx.compose.material3.HorizontalDivider(color = BorderHairline, thickness = 0.5.dp)
                         }
-                        androidx.compose.material3.HorizontalDivider(color = BorderHairline)
                     }
                 }
             } else {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onCloseChat) { Text("← Chats", color = TelegramBlue) }
-                    Text(chats.firstOrNull { it.id == selectedChatId }?.title ?: "Conversation", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                val activeChat = chats.firstOrNull { it.id == selectedChatId }
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onCloseChat) { Icon(Icons.Default.ArrowBack, contentDescription = "Back to chats", tint = TelegramBlue) }
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(TelegramBlue), contentAlignment = Alignment.Center) {
+                        Text(activeChat?.title?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                        Text("Telegram conversation", color = TextSecondary, fontSize = 11.sp)
+                    }
                 }
-                if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(24.dp))
-                messages.forEach { message ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start) {
-                        Surface(color = if (message.isOutgoing) Color(0xFF164C6B) else SurfaceDark, shape = RoundedCornerShape(12.dp), modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(0.88f)) {
-                            Text(message.text, color = TextPrimary, modifier = Modifier.padding(12.dp), fontSize = 14.sp)
+                if (isLoadingChats && messages.isEmpty()) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
+                } else if (messages.isEmpty()) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No messages in this conversation.", color = TextSecondary) }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+                    ) {
+                        items(messages, key = { it.id }) { message ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start
+                            ) {
+                                Surface(
+                                    color = if (message.isOutgoing) Color(0xFF164C6B) else SurfaceDark,
+                                    shape = RoundedCornerShape(
+                                        topStart = 16.dp, topEnd = 16.dp,
+                                        bottomStart = if (message.isOutgoing) 16.dp else 4.dp,
+                                        bottomEnd = if (message.isOutgoing) 4.dp else 16.dp
+                                    ),
+                                    modifier = Modifier.fillMaxWidth(0.86f)
+                                ) {
+                                    Text(message.text, color = TextPrimary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp), fontSize = 14.sp)
+                                }
+                            }
                         }
                     }
                 }
-                if (messages.isEmpty() && !isLoadingChats) Text("No messages to show.", color = TextSecondary)
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            OutlinedButton(
-                onClick = onLogout,
-                enabled = !isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = StatusError
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6B2121))
-            ) {
-                Text("Disconnect Telegram Session")
             }
         }
     }
 }
-
 @Composable
 private fun RegistrationCard(
     firstName: String,

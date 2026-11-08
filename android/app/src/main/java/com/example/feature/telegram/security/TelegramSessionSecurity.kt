@@ -1,6 +1,7 @@
 package com.example.feature.telegram.security
 
 import android.content.Context
+import com.example.dataone.BuildConfig
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -64,14 +65,18 @@ class TelegramSessionSecurity(private val context: Context) {
      * Can be set via BuildConfig (injected from local.properties/CI secrets) or entered in developer settings.
      */
     fun getTelegramApiId(): Int? {
+        val bundled = BuildConfig.TELEGRAM_API_ID
+        if (bundled > 0) return bundled
         val stored = encryptedPrefs.getInt(KEY_API_ID, 0)
-        return if (stored != 0) stored else null
+        return if (stored > 0) stored else null
     }
 
     /**
      * Retrieves the configured Telegram API Hash.
      */
     fun getTelegramApiHash(): String? {
+        val encoded = BuildConfig.TELEGRAM_API_HASH_BASE64
+        if (encoded.isNotBlank()) return String(Base64.getDecoder().decode(encoded), Charsets.UTF_8)
         val stored = encryptedPrefs.getString(KEY_API_HASH, null)
         return if (!stored.isNullOrBlank()) stored else null
     }

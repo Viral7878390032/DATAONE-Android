@@ -1,6 +1,8 @@
 package com.example.feature.telegram.bridge
 
 import com.example.feature.telegram.model.TelegramAuthState
+import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramMessage
 import com.example.feature.telegram.model.TelegramMediaConfig
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
@@ -40,6 +42,8 @@ interface TelegramClientBridge {
     /**
      * Indicates whether the native TDLib C++ binary (libtdjni.so) is compiled and loaded.
      */
+    val chats: StateFlow<List<TelegramChat>>
+    val messages: StateFlow<List<TelegramMessage>>
     val isNativeLibraryAvailable: Boolean
 
     /**
@@ -71,6 +75,10 @@ interface TelegramClientBridge {
      * Initiates media download on demand for a specific Telegram file ID.
      * Enforces the zero-auto-download requirement.
      */
+    suspend fun refreshChats(): Result<Unit>
+
+    suspend fun openChat(chatId: Long): Result<Unit>
+
     suspend fun downloadFileOnDemand(fileId: Int, priority: Int = 1): Result<Unit>
 
     /**

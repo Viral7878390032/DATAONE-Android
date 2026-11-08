@@ -252,6 +252,7 @@ fun TelegramScreen(
                         onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
                         onSendMessage = { viewModel.sendMessage() },
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
+                        onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
                         onOpenChat = { viewModel.openChat(it) },
@@ -698,6 +699,7 @@ private fun AuthenticatedUserCard(
     onMessageDraftChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onSendPhoto: (String) -> Unit,
+    onSendVideo: (String) -> Unit,
     onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
     onOpenChat: (Long) -> Unit,
@@ -718,6 +720,21 @@ private fun AuthenticatedUserCard(
                     copied
                 }
                 if (copiedFile != null) onSendPhoto(copiedFile.absolutePath)
+            }
+        }
+    }
+    val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val copiedFile = withContext(Dispatchers.IO) {
+                    val destination = File(context.cacheDir, "telegram-video-${System.currentTimeMillis()}.mp4")
+                    val copied = context.contentResolver.openInputStream(uri)?.use { input ->
+                        destination.outputStream().use { output -> input.copyTo(output) }
+                        destination
+                    }
+                    copied
+                }
+                if (copiedFile != null) onSendVideo(copiedFile.absolutePath)
             }
         }
     }
@@ -857,6 +874,9 @@ private fun AuthenticatedUserCard(
                     )
                     IconButton(onClick = { photoPicker.launch("image/*") }, enabled = !isLoadingChats) {
                         Icon(Icons.Default.Info, contentDescription = "Choose photo", tint = TelegramBlue)
+                    }
+                    IconButton(onClick = { videoPicker.launch("video/*") }, enabled = !isLoadingChats) {
+                        Icon(Icons.Default.Info, contentDescription = "Choose video", tint = TelegramBlue)
                     }
                     IconButton(onClick = onSendMessage, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)

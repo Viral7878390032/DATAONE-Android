@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
+import org.json.JSONObject
 
 /**
  * Concrete implementation of [TelegramRepository] for DATAONE.
@@ -37,6 +38,36 @@ class TelegramRepositoryImpl(
 
     override val isNativeLibraryAvailable: Boolean
         get() = clientBridge.isNativeLibraryAvailable
+
+    private val draftsPreferences by lazy {
+        context.getSharedPreferences("telegram_message_drafts", Context.MODE_PRIVATE)
+    }
+
+    override fun loadChatDrafts(): Map<Long, String> {
+        val raw = draftsPreferences.getString("drafts", null) ?: return emptyMap()
+        return try {
+            val json = JSONObject(raw)
+            buildMap {
+                val keys = json.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val chatId = key.toLongOrNull() ?: continue
+                    val draft = json.optString(key, "")
+                    if (draft.isNotEmpty()) put(chatId, draft)
+                }
+            }
+        } catch (_: Exception) { emptyMap() }
+    }
+
+    override fun saveChatDrafts(drafts: Map<Long, String>) {
+        val json = JSONObject()
+        drafts.forEach { (chatId, draft) -> if (draft.isNotEmpty()) json.put(chatId.toString(), draft) }
+        draftsPreferences.edit().putString("drafts", json.toString()).apply()
+    }
+
+    override fun clearChatDrafts() {
+        draftsPreferences.edit().remove("drafts").apply()
+    }
 
     override suspend fun startTelegram(): Unit = withContext(ioDispatcher) {
         val databaseDir = File(context.filesDir, "tdlib/database").apply { mkdirs() }

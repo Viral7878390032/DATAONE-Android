@@ -19,7 +19,8 @@ class TelegramViewModel(
 
     private val _uiState = MutableStateFlow(
         TelegramUiState(
-            isNativeLibraryAvailable = repository.isNativeLibraryAvailable
+            isNativeLibraryAvailable = repository.isNativeLibraryAvailable,
+            chatDrafts = repository.loadChatDrafts()
         )
     )
     val uiState: StateFlow<TelegramUiState> = _uiState.asStateFlow()
@@ -104,6 +105,7 @@ class TelegramViewModel(
                     errorMessage = null
                 )
             }
+            repository.saveChatDrafts(_uiState.value.chatDrafts)
             val result = repository.openChat(chatId)
             _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
         }
@@ -115,6 +117,7 @@ class TelegramViewModel(
             val drafts = if (chatId != null) current.chatDrafts + (chatId to current.messageDraft) else current.chatDrafts
             current.copy(selectedChatId = null, chatDrafts = drafts)
         }
+        repository.saveChatDrafts(_uiState.value.chatDrafts)
     }
 
     fun onMessageDraftChanged(value: String) {
@@ -123,6 +126,7 @@ class TelegramViewModel(
             val drafts = if (chatId != null) current.chatDrafts + (chatId to value) else current.chatDrafts
             current.copy(messageDraft = value, chatDrafts = drafts)
         }
+        repository.saveChatDrafts(_uiState.value.chatDrafts)
     }
 
     fun downloadMessageMedia(fileId: Int) {
@@ -149,6 +153,7 @@ class TelegramViewModel(
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
+            repository.saveChatDrafts(_uiState.value.chatDrafts)
         }
     }
 
@@ -167,6 +172,7 @@ class TelegramViewModel(
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
+            repository.saveChatDrafts(_uiState.value.chatDrafts)
         }
     }
 
@@ -185,6 +191,7 @@ class TelegramViewModel(
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
+            repository.saveChatDrafts(_uiState.value.chatDrafts)
         }
     }
 
@@ -203,6 +210,7 @@ class TelegramViewModel(
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
+            repository.saveChatDrafts(_uiState.value.chatDrafts)
         }
     }
 
@@ -310,6 +318,7 @@ class TelegramViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             repository.logout()
+            repository.clearChatDrafts()
             _uiState.update {
                 it.copy(
                     isLoading = false,

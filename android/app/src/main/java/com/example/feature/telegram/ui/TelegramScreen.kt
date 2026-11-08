@@ -712,6 +712,11 @@ private fun AuthenticatedUserCard(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    var chatSearchQuery by remember { mutableStateOf("") }
+    val filteredChats = chats.filter { chat ->
+        chat.title.contains(chatSearchQuery, ignoreCase = true) ||
+            chat.lastMessage.contains(chatSearchQuery, ignoreCase = true)
+    }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             coroutineScope.launch {
@@ -808,13 +813,35 @@ private fun AuthenticatedUserCard(
                     Text("All chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                     Text("${chats.size}", color = TextSecondary, fontSize = 12.sp)
                 }
+                OutlinedTextField(
+                    value = chatSearchQuery,
+                    onValueChange = { chatSearchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    placeholder = { Text("Search chats or recent messages", color = TextMuted) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = TelegramBlue,
+                        unfocusedBorderColor = BorderHairline,
+                        focusedContainerColor = SurfaceDark,
+                        unfocusedContainerColor = SurfaceDark,
+                        cursorColor = TelegramBlue
+                    )
+                )
                 if (chats.isEmpty() && isLoadingChats) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
-                } else if (chats.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No chats found. Tap refresh to try again.", color = TextSecondary) }
+                } else if (filteredChats.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            if (chats.isEmpty()) "No chats found. Tap refresh to try again." else "No chats match your search.",
+                            color = TextSecondary
+                        )
+                    }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 12.dp)) {
-                        items(chats, key = { it.id }) { chat ->
+                        items(filteredChats, key = { it.id }) { chat ->
                             Row(
                                 modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(horizontal = 16.dp, vertical = 11.dp),
                                 verticalAlignment = Alignment.CenterVertically

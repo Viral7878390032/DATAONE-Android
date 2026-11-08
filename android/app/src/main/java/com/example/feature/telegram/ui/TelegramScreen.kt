@@ -267,6 +267,7 @@ fun TelegramScreen(
                         onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
                         onToggleChatPinned = { chatId, isPinned -> viewModel.toggleChatPinned(chatId, isPinned) },
+                        onToggleChatMarkedUnread = { chatId, marked -> viewModel.toggleChatMarkedUnread(chatId, marked) },
                         onOpenChat = { viewModel.openChat(it) },
                         onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
@@ -716,6 +717,7 @@ private fun AuthenticatedUserCard(
     onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
     onToggleChatPinned: (Long, Boolean) -> Unit,
+    onToggleChatMarkedUnread: (Long, Boolean) -> Unit,
     onOpenChat: (Long) -> Unit,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
@@ -919,6 +921,16 @@ private fun AuthenticatedUserCard(
                                         Text(
                                             if (chat.isPinned) "Unpin" else "Pin",
                                             color = if (chat.isPinned) TelegramBlue else TextMuted,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                    TextButton(
+                                        onClick = { onToggleChatMarkedUnread(chat.id, !chat.isMarkedAsUnread) },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                    ) {
+                                        Text(
+                                            if (chat.isMarkedAsUnread) "Read" else "Unread",
+                                            color = if (chat.isMarkedAsUnread) TelegramBlue else TextMuted,
                                             fontSize = 11.sp
                                         )
                                     }

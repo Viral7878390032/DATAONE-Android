@@ -283,6 +283,16 @@ class NativeTdLibBridge : TelegramClientBridge {
         selectedChatId = chatId
         val result = sendRequest(TdApi.GetChatHistory(chatId, 0, 0, 50, false)) as TdApi.Messages
         _messages.value = result.messages.reversed().map(::toTelegramMessage)
+        if (result.messages.isNotEmpty()) {
+            sendRequest(
+                TdApi.ViewMessages(
+                    chatId,
+                    result.messages.map { it.id }.toLongArray(),
+                    true
+                )
+            )
+            refreshChats()
+        }
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 

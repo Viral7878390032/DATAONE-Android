@@ -58,6 +58,7 @@ interface TelegramRepository {
     suspend fun refreshChats(): Result<Unit>
 
     suspend fun openChat(chatId: Long): Result<Unit>
+    suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit>
 
     suspend fun requestMediaDownload(fileId: Int): Result<Unit>
 

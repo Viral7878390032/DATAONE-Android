@@ -24,5 +24,6 @@ data class TelegramUiState(
     val chats: List<TelegramChat> = emptyList(),
     val messages: List<TelegramMessage> = emptyList(),
     val selectedChatId: Long? = null,
-    val isLoadingChats: Boolean = false
+    val isLoadingChats: Boolean = false,
+    val messageDraft: String = ""
 )

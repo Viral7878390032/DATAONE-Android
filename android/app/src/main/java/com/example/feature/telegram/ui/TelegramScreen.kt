@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.BitmapFactory
+import android.media.MediaPlayer
 import android.provider.OpenableColumns
 import android.widget.MediaController
 import android.widget.VideoView
@@ -766,6 +767,20 @@ private fun AuthenticatedUserCard(
             }
         }
     }
+    val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val copiedFile = withContext(Dispatchers.IO) {
+                    val destination = File(context.cacheDir, "telegram-audio-${System.currentTimeMillis()}.audio")
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        destination.outputStream().use { output -> input.copyTo(output) }
+                        destination
+                    }
+                }
+                if (copiedFile != null) onSendDocument(copiedFile.absolutePath)
+            }
+        }
+    }
     Surface(color = BackgroundDark, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedChatId == null) {
@@ -869,6 +884,9 @@ private fun AuthenticatedUserCard(
                                         if (message.mediaType == "video") {
                                             TelegramVideoContent(message = message, onDownloadMedia = onDownloadMedia)
                                         }
+                                        if (message.mediaType == "audio" || message.mediaType == "voice") {
+                                            TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
+                                        }
                                         if (message.text.isNotBlank()) {
                                             Text(message.text, color = TextPrimary, modifier = Modifier.padding(top = if (message.mediaType == "photo") 6.dp else 0.dp), fontSize = 14.sp)
                                         } else if (message.mediaType != "photo") {
@@ -906,6 +924,9 @@ private fun AuthenticatedUserCard(
                     IconButton(onClick = { videoPicker.launch("video/*") }, enabled = !isLoadingChats) {
                         Icon(Icons.Default.Info, contentDescription = "Choose video", tint = TelegramBlue)
                     }
+                    IconButton(onClick = { audioPicker.launch("audio/*") }, enabled = !isLoadingChats) {
+                        Icon(Icons.Default.Info, contentDescription = "Choose audio", tint = TelegramBlue)
+                    }
                     IconButton(onClick = { documentPicker.launch(arrayOf("*/*")) }, enabled = !isLoadingChats) {
                         Icon(Icons.Default.Info, contentDescription = "Choose file", tint = TelegramBlue)
                     }
@@ -917,6 +938,89 @@ private fun AuthenticatedUserCard(
         }
     }
 }
+@Composable
+private fun TelegramAudioContent(
+    message: com.example.feature.telegram.model.TelegramMessage,
+    onDownloadMedia: (Int) -> Unit
+) {
+    var isPlaying by remember(message.id) { mutableStateOf(false) }
+    var player by remember(message.id) { mutableStateOf<MediaPlayer?>(null) }
+
+    androidx.compose.runtime.DisposableEffect(message.id) {
+        onDispose {
+            player?.release()
+            player = null
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceCard)
+            .padding(12.dp)
+    ) {
+        Text(
+            if (message.mediaType == "voice") "Voice message" else "Audio",
+            color = TextPrimary,
+            fontWeight = FontWeight.Medium
+        )
+        if (message.isMediaDownloading) {
+            Text("Downloading audio...", color = TextSecondary, fontSize = 12.sp)
+            CircularProgressIndicator(
+                color = TelegramBlue,
+                modifier = Modifier.padding(top = 8.dp).size(20.dp),
+                strokeWidth = 2.dp
+            )
+        } else if (!message.mediaFilePath.isNullOrBlank()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = {
+                        val path = message.mediaFilePath ?: return@Button
+                        if (isPlaying) {
+                            player?.pause()
+                            isPlaying = false
+                        } else {
+                            try {
+                                if (player == null) {
+                                    player = MediaPlayer().apply {
+                                        setDataSource(path)
+                                        setOnCompletionListener { isPlaying = false }
+                                        prepare()
+                                    }
+                                }
+                                player?.start()
+                                isPlaying = true
+                            } catch (error: Exception) {
+                                player?.release()
+                                player = null
+                                isPlaying = false
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
+                ) {
+                    Text(if (isPlaying) "Pause" else "Play")
+                }
+                Text(
+                    if (message.mediaType == "voice") "Voice note" else "Audio file",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 10.dp)
+                )
+            }
+        } else {
+            Button(
+                onClick = { message.mediaFileId?.let(onDownloadMedia) },
+                enabled = message.mediaFileId != null,
+                colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
+            ) {
+                Text("Download ${if (message.mediaType == "voice") "voice message" else "audio"}")
+            }
+        }
+    }
+}
+
 @Composable
 private fun TelegramPhotoContent(
     message: com.example.feature.telegram.model.TelegramMessage,

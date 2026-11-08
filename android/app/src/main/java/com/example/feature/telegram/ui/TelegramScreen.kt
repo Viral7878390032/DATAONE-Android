@@ -922,11 +922,10 @@ private fun AuthenticatedUserCard(
                                             maxLines = 1
                                         )
                                         if (chat.isMuted) {
-                                            Icon(
-                                                imageVector = Icons.Default.NotificationsOff,
-                                                contentDescription = "Notifications muted",
-                                                tint = TextMuted,
-                                                modifier = Modifier.size(15.dp).padding(end = 2.dp)
+                                            Text(
+                                                text = "🔕",
+                                                fontSize = 13.sp,
+                                                modifier = Modifier.padding(end = 2.dp)
                                             )
                                         }
                                         if (chat.lastMessageDate > 0) {

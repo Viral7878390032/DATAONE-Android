@@ -344,7 +344,7 @@ class NativeTdLibBridge : TelegramClientBridge {
     }
 
     private fun toTelegramMessage(message: TdApi.Message): TelegramMessage {
-        val messageContent = messageContent
+        val messageContent = message.content
         val photoFile = (messageContent as? TdApi.MessagePhoto)
             ?.photo
             ?.sizes

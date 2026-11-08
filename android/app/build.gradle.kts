@@ -9,6 +9,10 @@ android {
     compileSdk = 35
 
     defaultConfig {
+        val telegramApiId = System.getenv("TELEGRAM_API_ID")?.toIntOrNull() ?: 0
+        val telegramApiHashBase64 = java.util.Base64.getEncoder().encodeToString(System.getenv("TELEGRAM_API_HASH").orEmpty().toByteArray())
+        buildConfigField("int", "TELEGRAM_API_ID", telegramApiId.toString())
+        buildConfigField("String", "TELEGRAM_API_HASH_BASE64", "$telegramApiHashBase64")
         applicationId = "com.example.dataone"
         minSdk = 26
         targetSdk = 35
@@ -16,7 +20,7 @@ android {
         versionName = "1.0"
     }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

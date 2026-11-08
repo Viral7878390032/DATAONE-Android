@@ -260,6 +260,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     id = chat.id,
                                     title = chat.title,
                                     lastMessage = chat.lastMessage?.let { messagePreview(it.content) } ?: "No messages yet",
+                                    lastMessageDate = chat.lastMessage?.date ?: 0,
                                     unreadCount = chat.unreadCount
                                 )
                             } catch (error: Throwable) {

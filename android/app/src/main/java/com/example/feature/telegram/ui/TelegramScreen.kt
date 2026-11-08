@@ -179,10 +179,18 @@ fun TelegramScreen(
 
             // Dynamic Authorization Card driven by TDLib AuthState
             when (val state = uiState.authState) {
-                is TelegramAuthState.Uninitialized, is TelegramAuthState.Closed -> {
+                is TelegramAuthState.Uninitialized -> {
                     UninitializedStateCard(
                         isLoading = uiState.isLoading,
                         onConnectClick = { viewModel.startConnection() }
+                    )
+                }
+
+                is TelegramAuthState.Closed -> {
+                    ErrorStateCard(
+                        errorMessage = "Telegram engine closed the session before DATAONE confirmed your account. Tap Retry Connection and note any message that appears.",
+                        isRecoverable = true,
+                        onRetry = { viewModel.startConnection() }
                     )
                 }
 

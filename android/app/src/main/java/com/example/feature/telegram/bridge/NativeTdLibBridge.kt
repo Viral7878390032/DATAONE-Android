@@ -6,29 +6,26 @@ import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import org.drinkless.tdlib.Client
+import org.drinkless.tdlib.TdApi
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
 
 /**
- * Official TDLib implementation bridge.
- *
- * Implements the TDLib update loop and maps native TDLib authorization states
- * to [TelegramAuthState].
- *
- * Note on TDLib native library:
- * Official TDLib requires native binaries (`libtdjni.so`) compiled with Android NDK.
- * If the native binary is not yet compiled into the APK, this bridge gracefully catches
- * [UnsatisfiedLinkError] and emits [TelegramAuthState.Error] detailing the missing native build,
- * without crashing or inventing fake mock data.
+ * Real TDLib bridge. Uses the Java Client API directly so the database encryption
+ * key supplied by TelegramSessionSecurity is passed to TDLib (the third-party KTX
+ * convenience wrapper currently initializes TDLib with an empty key).
  */
 class NativeTdLibBridge : TelegramClientBridge {
 
     private val tag = "DATAONE-TDLib"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     private val _authState = MutableStateFlow<TelegramAuthState>(TelegramAuthState.Uninitialized)
     override val authState: StateFlow<TelegramAuthState> = _authState.asStateFlow()
 
@@ -36,165 +33,221 @@ class NativeTdLibBridge : TelegramClientBridge {
     override val isNativeLibraryAvailable: Boolean
         get() = nativeLoaded.get()
 
-    private var activeParams: TelegramInitParams? = null
+    @Volatile private var client: Client? = null
+    @Volatile private var activeParams: TelegramInitParams? = null
 
     init {
         try {
             System.loadLibrary("tdjni")
             nativeLoaded.set(true)
-            Log.i(tag, "Official Telegram TDLib native library loaded successfully.")
-        } catch (e: UnsatisfiedLinkError) {
+            Log.i(tag, "TDLib native library loaded.")
+        } catch (error: UnsatisfiedLinkError) {
             nativeLoaded.set(false)
-            Log.w(tag, "Native libtdjni.so not yet compiled or packaged. TDLib calls will be deferred.")
+            Log.e(tag, "TDLib native library could not be loaded.", error)
         }
     }
 
     override suspend fun initialize(params: TelegramInitParams): Result<Unit> {
         activeParams = params
-        _authState.value = TelegramAuthState.Connecting
-
         if (!nativeLoaded.get()) {
-            val errorMsg = "TDLib native library (libtdjni.so) not yet compiled. " +
-                    "Follow Step 1 build instructions to compile TDLib for Android NDK."
-            _authState.value = TelegramAuthState.Error(
-                message = errorMsg,
-                errorCode = 1001,
-                isRecoverable = false
-            )
-            return Result.failure(IllegalStateException(errorMsg))
+            val message = "Telegram engine is unavailable: TDLib native library could not be loaded."
+            _authState.value = TelegramAuthState.Error(message, 1001, false)
+            return Result.failure(IllegalStateException(message))
+        }
+        if (params.apiId <= 0 || params.apiHash.isBlank()) {
+            _authState.value = TelegramAuthState.WaitTdLibParameters
+            return Result.failure(IllegalStateException("Enter your Telegram API ID and API Hash in the Telegram settings."))
+        }
+        if (params.databaseEncryptionKey.size != 32) {
+            val message = "The Telegram database encryption key is invalid. Please reset the Telegram setup."
+            _authState.value = TelegramAuthState.Error(message, 1002, false)
+            return Result.failure(IllegalStateException(message))
         }
 
         return try {
-            // Here the official TDLib Client instance is started:
-            // e.g., Client.create(UpdateHandler, ExceptionHandler, ExceptionHandler)
-            // Send SetTdlibParameters with database encryption key and strict on-demand media flags
-            Log.i(tag, "Bootstrapping official TDLib instance...")
-            
-            // In TDLib lifecycle:
-            // 1. TdApi.SetTdlibParameters
-            // 2. TdApi.CheckDatabaseEncryptionKey
-            // 3. Receive AuthorizationStateWaitPhoneNumber
-            _authState.value = TelegramAuthState.WaitPhoneNumber()
+            if (client == null) {
+                _authState.value = TelegramAuthState.Connecting
+                client = Client.create(
+                    { update ->
+                        if (update is TdApi.UpdateAuthorizationState) {
+                            scope.launch { handleAuthorizationState(update.authorizationState) }
+                        }
+                    },
+                    { error -> Log.e(tag, "TDLib update callback failed.", error) },
+                    { error ->
+                        Log.e(tag, "TDLib callback failed.", error)
+                        scope.launch {
+                            _authState.value = TelegramAuthState.Error(
+                                error.message ?: "Telegram engine callback failed."
+                            )
+                        }
+                    }
+                )
+            }
+            // Client.create() loads the JNI class; explicitly setting this also gives
+            // a clear failure here rather than crashing later on the first request.
+            Client.execute(TdApi.SetLogVerbosityLevel(1))
             Result.success(Unit)
-        } catch (e: Exception) {
-            _authState.value = TelegramAuthState.Error(e.message ?: "Failed to initialize TDLib")
-            Result.failure(e)
+        } catch (error: Throwable) {
+            Log.e(tag, "Unable to create TDLib client.", error)
+            _authState.value = TelegramAuthState.Error(error.message ?: "Unable to start Telegram engine.")
+            Result.failure(error)
         }
     }
 
+    private suspend fun handleAuthorizationState(state: TdApi.AuthorizationState) {
+        val params = activeParams ?: return
+        try {
+            when (state) {
+                is TdApi.AuthorizationStateWaitTdlibParameters -> {
+                    _authState.value = TelegramAuthState.Connecting
+                    val request = TdApi.SetTdlibParameters()
+                    request.useTestDc = false
+                    request.databaseDirectory = params.databaseDirectory.absolutePath
+                    request.filesDirectory = params.filesDirectory.absolutePath
+                    request.databaseEncryptionKey = params.databaseEncryptionKey
+                    request.useFileDatabase = params.useFileDatabase
+                    request.useChatInfoDatabase = params.useChatInfoDatabase
+                    request.useMessageDatabase = params.useMessageDatabase
+                    request.useSecretChats = false
+                    request.apiId = params.apiId
+                    request.apiHash = params.apiHash
+                    request.systemLanguageCode = params.systemLanguageCode
+                    request.deviceModel = params.deviceModel
+                    request.systemVersion = params.systemVersion
+                    request.applicationVersion = params.applicationVersion
+                    sendRequest(request)
+                }
+                is TdApi.AuthorizationStateWaitEncryptionKey -> {
+                    sendRequest(TdApi.CheckDatabaseEncryptionKey(params.databaseEncryptionKey))
+                }
+                is TdApi.AuthorizationStateWaitPhoneNumber -> {
+                    _authState.value = TelegramAuthState.WaitPhoneNumber()
+                }
+                is TdApi.AuthorizationStateWaitCode -> {
+                    val info = state.codeInfo
+                    _authState.value = TelegramAuthState.WaitCode(
+                        phoneNumber = info.phoneNumber.orEmpty(),
+                        codeLength = 5,
+                        deliveryType = info.type.javaClass.simpleName
+                            .removePrefix("AuthenticationCodeType")
+                            .ifBlank { "Telegram" }
+                    )
+                }
+                is TdApi.AuthorizationStateWaitPassword -> {
+                    _authState.value = TelegramAuthState.WaitPassword(
+                        passwordHint = state.passwordHint,
+                        hasRecoveryEmail = state.hasRecoveryEmailAddress
+                    )
+                }
+                is TdApi.AuthorizationStateWaitRegistration -> {
+                    _authState.value = TelegramAuthState.WaitRegistration()
+                }
+                is TdApi.AuthorizationStateReady -> {
+                    val me = sendRequest(TdApi.GetMe()) as TdApi.User
+                    _authState.value = TelegramAuthState.Authenticated(
+                        TelegramUser(
+                            id = me.id,
+                            firstName = me.firstName,
+                            lastName = me.lastName,
+                            phoneNumber = me.phoneNumber
+                        )
+                    )
+                }
+                is TdApi.AuthorizationStateLoggingOut -> _authState.value = TelegramAuthState.Closing
+                is TdApi.AuthorizationStateClosing -> _authState.value = TelegramAuthState.Closing
+                is TdApi.AuthorizationStateClosed -> {
+                    client = null
+                    _authState.value = TelegramAuthState.Closed
+                }
+                else -> {
+                    Log.w(tag, "Unhandled TDLib authorization state: ${state.javaClass.simpleName}")
+                }
+            }
+        } catch (error: Throwable) {
+            Log.e(tag, "Authorization state handling failed.", error)
+            _authState.value = TelegramAuthState.Error(error.message ?: "Telegram authorization failed.")
+        }
+    }
+
+    private suspend fun sendRequest(function: TdApi.Function<*>): TdApi.Object =
+        suspendCancellableCoroutine { continuation ->
+            val currentClient = client
+            if (currentClient == null) {
+                continuation.resume(TdApi.Error(500, "Telegram client is not initialized."))
+                return@suspendCancellableCoroutine
+            }
+            try {
+                currentClient.send(function, Client.ResultHandler { result ->
+                    if (continuation.isActive) continuation.resume(result)
+                })
+            } catch (error: Throwable) {
+                if (continuation.isActive) {
+                    continuation.resume(TdApi.Error(500, error.message ?: "TDLib request failed."))
+                }
+            }
+        }.let { result ->
+            if (result is TdApi.Error) throw IllegalStateException("Telegram error ${result.code}: ${result.message}")
+            result
+        }
+
     override suspend fun sendPhoneNumber(phoneNumber: String): Result<Unit> {
-        val cleanNumber = phoneNumber.trim()
-        if (cleanNumber.length < 7) {
-            _authState.value = TelegramAuthState.WaitPhoneNumber("Please enter a valid international phone number.")
-            return Result.failure(IllegalArgumentException("Invalid phone number"))
+        val clean = phoneNumber.trim()
+        if (!clean.startsWith("+") || clean.count { it.isDigit() } < 7) {
+            return Result.failure(IllegalArgumentException("Enter a valid international phone number, including + and country code."))
         }
-
-        if (!nativeLoaded.get()) {
-            return Result.failure(IllegalStateException("TDLib native library missing."))
-        }
-
-        return try {
-            // When official TDLib is compiled:
-            // client.send(TdApi.SetAuthenticationPhoneNumber(cleanNumber, null), resultHandler)
-            // On callback, TDLib fires TdApi.UpdateAuthorizationState(AuthorizationStateWaitCode)
-            _authState.value = TelegramAuthState.WaitCode(
-                phoneNumber = cleanNumber,
-                codeLength = 5,
-                deliveryType = "Telegram App / SMS"
-            )
-            Result.success(Unit)
-        } catch (e: Exception) {
-            _authState.value = TelegramAuthState.WaitPhoneNumber(e.message)
-            Result.failure(e)
-        }
+        return runRequest { TdApi.SetAuthenticationPhoneNumber(clean, null) }
     }
 
     override suspend fun sendAuthCode(code: String): Result<Unit> {
-        val cleanCode = code.trim()
-        if (cleanCode.isBlank()) {
-            return Result.failure(IllegalArgumentException("Code cannot be empty"))
-        }
-
-        if (!nativeLoaded.get()) {
-            return Result.failure(IllegalStateException("TDLib native library missing."))
-        }
-
-        return try {
-            // Official TDLib call:
-            // client.send(TdApi.CheckAuthenticationCode(cleanCode), resultHandler)
-            // If user has 2FA enabled, TDLib fires UpdateAuthorizationState(AuthorizationStateWaitPassword)
-            // If login succeeds directly, TDLib fires UpdateAuthorizationState(AuthorizationStateReady)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val clean = code.trim()
+        if (clean.isBlank()) return Result.failure(IllegalArgumentException("Verification code cannot be empty."))
+        return runRequest { TdApi.CheckAuthenticationCode(clean) }
     }
 
     override suspend fun sendPassword(password: String): Result<Unit> {
-        if (!nativeLoaded.get()) {
-            return Result.failure(IllegalStateException("TDLib native library missing."))
-        }
-
-        return try {
-            // Official TDLib call:
-            // client.send(TdApi.CheckAuthenticationPassword(password), resultHandler)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        if (password.isBlank()) return Result.failure(IllegalArgumentException("Telegram password cannot be empty."))
+        return runRequest { TdApi.CheckAuthenticationPassword(password) }
     }
 
     override suspend fun sendRegistration(firstName: String, lastName: String): Result<Unit> {
-        if (!nativeLoaded.get()) {
-            return Result.failure(IllegalStateException("TDLib native library missing."))
-        }
-
-        return try {
-            // Official TDLib call:
-            // client.send(TdApi.RegisterUser(firstName, lastName), resultHandler)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        if (firstName.isBlank()) return Result.failure(IllegalArgumentException("First name is required."))
+        return runRequest { TdApi.RegisterUser(firstName.trim(), lastName.trim(), false) }
     }
 
     override suspend fun downloadFileOnDemand(fileId: Int, priority: Int): Result<Unit> {
-        // Enforces Requirement 12 & 13:
-        // "Do not download or cache all Telegram media automatically. Load media only when requested by the user."
-        if (!nativeLoaded.get()) {
-            return Result.failure(IllegalStateException("TDLib native library missing."))
-        }
-
-        return try {
-            // Official TDLib call:
-            // client.send(TdApi.DownloadFile(fileId, priority, 0, 0, false), resultHandler)
-            Log.d(tag, "Requested on-demand download for Telegram file ID: $fileId (priority: $priority)")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        if (fileId <= 0) return Result.failure(IllegalArgumentException("Invalid Telegram file ID."))
+        return runRequest { TdApi.DownloadFile(fileId, priority.coerceIn(1, 32), 0, 0, false) }
     }
 
-    override suspend fun logout(): Result<Unit> {
-        return try {
-            // Official TDLib call:
-            // client.send(TdApi.LogOut(), resultHandler)
-            _authState.value = TelegramAuthState.Closing
-            _authState.value = TelegramAuthState.Closed
+    private suspend fun runRequest(request: () -> TdApi.Function<*>): Result<Unit> =
+        try {
+            sendRequest(request())
             Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+        } catch (error: Throwable) {
+            Result.failure(error)
         }
-    }
+
+    override suspend fun logout(): Result<Unit> =
+        runRequest { TdApi.LogOut() }.also {
+            if (it.isFailure) _authState.value = TelegramAuthState.Error(
+                it.exceptionOrNull()?.message ?: "Unable to log out of Telegram."
+            )
+        }
 
     override suspend fun close(): Result<Unit> {
+        val current = client ?: run {
+            _authState.value = TelegramAuthState.Closed
+            return Result.success(Unit)
+        }
         return try {
-            // Official TDLib call:
-            // client.send(TdApi.Close(), resultHandler)
+            _authState.value = TelegramAuthState.Closing
+            sendRequest(TdApi.Close())
+            client = null
             _authState.value = TelegramAuthState.Closed
             Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+        } catch (error: Throwable) {
+            Result.failure(error)
         }
     }
 }

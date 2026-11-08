@@ -83,18 +83,37 @@ class TelegramViewModel(
 
     fun openChat(chatId: Long) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingChats = true, selectedChatId = chatId, errorMessage = null) }
+            _uiState.update { current ->
+                val drafts = current.selectedChatId?.let { drafts ->
+                    current.chatDrafts + (current.selectedChatId to current.messageDraft)
+                } ?: current.chatDrafts
+                current.copy(
+                    isLoadingChats = true,
+                    selectedChatId = chatId,
+                    messageDraft = drafts[chatId].orEmpty(),
+                    chatDrafts = drafts,
+                    errorMessage = null
+                )
+            }
             val result = repository.openChat(chatId)
             _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
         }
     }
 
     fun closeChat() {
-        _uiState.update { it.copy(selectedChatId = null) }
+        _uiState.update { current ->
+            val chatId = current.selectedChatId
+            val drafts = if (chatId != null) current.chatDrafts + (chatId to current.messageDraft) else current.chatDrafts
+            current.copy(selectedChatId = null, chatDrafts = drafts)
+        }
     }
 
     fun onMessageDraftChanged(value: String) {
-        _uiState.update { it.copy(messageDraft = value) }
+        _uiState.update { current ->
+            val chatId = current.selectedChatId
+            val drafts = if (chatId != null) current.chatDrafts + (chatId to value) else current.chatDrafts
+            current.copy(messageDraft = value, chatDrafts = drafts)
+        }
     }
 
     fun downloadMessageMedia(fileId: Int) {
@@ -117,6 +136,7 @@ class TelegramViewModel(
                 it.copy(
                     isLoadingChats = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
+                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
@@ -134,6 +154,7 @@ class TelegramViewModel(
                 it.copy(
                     isLoadingChats = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
+                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
@@ -151,6 +172,7 @@ class TelegramViewModel(
                 it.copy(
                     isLoadingChats = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
+                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
@@ -168,6 +190,7 @@ class TelegramViewModel(
                 it.copy(
                     isLoadingChats = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
+                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }

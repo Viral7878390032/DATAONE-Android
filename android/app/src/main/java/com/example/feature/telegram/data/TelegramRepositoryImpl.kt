@@ -34,7 +34,7 @@ class TelegramRepositoryImpl(
     override val isNativeLibraryAvailable: Boolean
         get() = clientBridge.isNativeLibraryAvailable
 
-    override suspend fun startTelegram() = withContext(ioDispatcher) {
+    override suspend fun startTelegram(): Unit = withContext(ioDispatcher) {
         val databaseDir = File(context.filesDir, "tdlib/database").apply { mkdirs() }
         val filesDir = File(context.filesDir, "tdlib/files").apply { mkdirs() }
 
@@ -58,6 +58,7 @@ class TelegramRepositoryImpl(
         )
 
         clientBridge.initialize(params)
+        Unit
     }
 
     override suspend fun submitPhoneNumber(phoneNumber: String): Result<Unit> = withContext(ioDispatcher) {

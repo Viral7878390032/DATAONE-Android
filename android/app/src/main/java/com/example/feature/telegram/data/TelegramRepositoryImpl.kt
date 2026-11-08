@@ -1,0 +1,91 @@
+package com.example.feature.telegram.data
+
+import android.content.Context
+import android.os.Build
+import com.example.feature.telegram.bridge.NativeTdLibBridge
+import com.example.feature.telegram.bridge.TelegramClientBridge
+import com.example.feature.telegram.bridge.TelegramInitParams
+import com.example.feature.telegram.model.TelegramAuthState
+import com.example.feature.telegram.model.TelegramMediaConfig
+import com.example.feature.telegram.security.TelegramSessionSecurity
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
+import java.io.File
+
+/**
+ * Concrete implementation of [TelegramRepository] for DATAONE.
+ *
+ * Adheres to:
+ * 1. Encrypted local session storage (Android Keystore + EncryptedSharedPreferences).
+ * 2. Strict on-demand media loading (zero auto-download).
+ * 3. Independent module coexistence with Gmail and Supabase.
+ */
+class TelegramRepositoryImpl(
+    private val context: Context,
+    private val security: TelegramSessionSecurity = TelegramSessionSecurity(context),
+    private val clientBridge: TelegramClientBridge = NativeTdLibBridge(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : TelegramRepository {
+
+    override val authState: StateFlow<TelegramAuthState> = clientBridge.authState
+
+    override val isNativeLibraryAvailable: Boolean
+        get() = clientBridge.isNativeLibraryAvailable
+
+    override suspend fun startTelegram() = withContext(ioDispatcher) {
+        val databaseDir = File(context.filesDir, "tdlib/database").apply { mkdirs() }
+        val filesDir = File(context.filesDir, "tdlib/files").apply { mkdirs() }
+
+        // Fetch 256-bit database encryption key from Keystore
+        val dbKey = security.getOrCreateDatabaseEncryptionKey()
+
+        // Fetch API credentials (loaded from secure storage or BuildConfig, never hardcoded)
+        val apiId = security.getTelegramApiId() ?: 0
+        val apiHash = security.getTelegramApiHash() ?: ""
+
+        val params = TelegramInitParams(
+            apiId = apiId,
+            apiHash = apiHash,
+            databaseDirectory = databaseDir,
+            filesDirectory = filesDir,
+            databaseEncryptionKey = dbKey,
+            mediaConfig = TelegramMediaConfig.STRICT_ON_DEMAND,
+            deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}",
+            systemVersion = "Android ${Build.VERSION.RELEASE}",
+            applicationVersion = "DATAONE-1.0.0"
+        )
+
+        clientBridge.initialize(params)
+    }
+
+    override suspend fun submitPhoneNumber(phoneNumber: String): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.sendPhoneNumber(phoneNumber)
+    }
+
+    override suspend fun submitAuthCode(code: String): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.sendAuthCode(code)
+    }
+
+    override suspend fun submit2FaPassword(password: String): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.sendPassword(password)
+    }
+
+    override suspend fun submitRegistration(firstName: String, lastName: String): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.sendRegistration(firstName, lastName)
+    }
+
+    override suspend fun logout(): Result<Unit> = withContext(ioDispatcher) {
+        security.clearSession()
+        clientBridge.logout()
+    }
+
+    override suspend fun requestMediaDownload(fileId: Int): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.downloadFileOnDemand(fileId, priority = 1)
+    }
+
+    override suspend fun configureApiCredentials(apiId: Int, apiHash: String) = withContext(ioDispatcher) {
+        security.storeApiCredentials(apiId, apiHash)
+    }
+}

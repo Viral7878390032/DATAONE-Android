@@ -78,6 +78,7 @@ interface TelegramClientBridge {
     suspend fun refreshChats(): Result<Unit>
 
     suspend fun openChat(chatId: Long): Result<Unit>
+    suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit>
 
     suspend fun downloadFileOnDemand(fileId: Int, priority: Int = 1): Result<Unit>
 

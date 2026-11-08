@@ -63,6 +63,15 @@ class TelegramViewModel(
         }
     }
 
+    fun toggleChatPinned(chatId: Long, isPinned: Boolean) {
+        viewModelScope.launch {
+            val result = repository.toggleChatPinned(chatId, isPinned)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to update pinned chat.") }
+            }
+        }
+    }
+
     fun openChat(chatId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingChats = true, selectedChatId = chatId, errorMessage = null) }

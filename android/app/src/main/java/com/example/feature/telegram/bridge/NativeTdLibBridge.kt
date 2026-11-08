@@ -303,8 +303,10 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun sendVideoMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The selected video could not be opened." }
+        val inputVideo = TdApi.InputVideo()
+        inputVideo.video = TdApi.InputFileLocal(path)
         val content = TdApi.InputMessageVideo()
-        content.video = TdApi.InputFileLocal(path)
+        content.video = inputVideo
         content.caption = TdApi.FormattedText(caption, emptyArray())
         sendRequest(TdApi.SendMessage(chatId, null, null, null, null, content))
         openChat(chatId)

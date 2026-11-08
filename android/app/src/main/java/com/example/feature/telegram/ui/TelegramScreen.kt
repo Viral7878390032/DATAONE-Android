@@ -717,6 +717,8 @@ private fun AuthenticatedUserCard(
         chat.title.contains(chatSearchQuery, ignoreCase = true) ||
             chat.lastMessage.contains(chatSearchQuery, ignoreCase = true)
     }
+    var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
+    val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             coroutineScope.launch {
@@ -881,16 +883,38 @@ private fun AuthenticatedUserCard(
                         Text("Telegram conversation", color = TextSecondary, fontSize = 11.sp)
                     }
                 }
+                OutlinedTextField(
+                    value = conversationSearchQuery,
+                    onValueChange = { conversationSearchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    placeholder = { Text("Search in conversation", color = TextMuted) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = TelegramBlue,
+                        unfocusedBorderColor = BorderHairline,
+                        focusedContainerColor = SurfaceDark,
+                        unfocusedContainerColor = SurfaceDark,
+                        cursorColor = TelegramBlue
+                    )
+                )
                 if (isLoadingChats && messages.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
-                } else if (messages.isEmpty()) {
-                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No messages in this conversation.", color = TextSecondary) }
+                } else if (filteredMessages.isEmpty()) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(
+                            if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
+                            color = TextSecondary
+                        )
+                    }
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                     ) {
-                        items(messages, key = { it.id }) { message ->
+                        items(filteredMessages, key = { it.id }) { message ->
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                                 horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start

@@ -713,9 +713,11 @@ private fun AuthenticatedUserCard(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var chatSearchQuery by remember { mutableStateOf("") }
+    var showUnreadOnly by remember { mutableStateOf(false) }
     val filteredChats = chats.filter { chat ->
-        chat.title.contains(chatSearchQuery, ignoreCase = true) ||
-            chat.lastMessage.contains(chatSearchQuery, ignoreCase = true)
+        (!showUnreadOnly || chat.unreadCount > 0) &&
+            (chat.title.contains(chatSearchQuery, ignoreCase = true) ||
+                chat.lastMessage.contains(chatSearchQuery, ignoreCase = true))
     }
     var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
     val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
@@ -832,6 +834,29 @@ private fun AuthenticatedUserCard(
                         cursorColor = TelegramBlue
                     )
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { showUnreadOnly = false },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (!showUnreadOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
+                            contentColor = if (!showUnreadOnly) TelegramBlue else TextSecondary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (!showUnreadOnly) TelegramBlue else BorderHairline),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                    ) { Text("All (${chats.size})", fontSize = 12.sp) }
+                    OutlinedButton(
+                        onClick = { showUnreadOnly = true },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (showUnreadOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
+                            contentColor = if (showUnreadOnly) TelegramBlue else TextSecondary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (showUnreadOnly) TelegramBlue else BorderHairline),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                    ) { Text("Unread (${chats.count { it.unreadCount > 0 }})", fontSize = 12.sp) }
+                }
                 if (chats.isEmpty() && isLoadingChats) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
                 } else if (filteredChats.isEmpty()) {

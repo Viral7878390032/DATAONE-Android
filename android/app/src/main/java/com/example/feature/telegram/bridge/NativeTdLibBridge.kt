@@ -349,20 +349,38 @@ class NativeTdLibBridge : TelegramClientBridge {
             ?.sizes
             ?.maxByOrNull { size -> size.width.toLong() * size.height.toLong() }
             ?.photo
-        val localFile = photoFile?.local
-        val caption = (message.content as? TdApi.MessagePhoto)?.caption?.text.orEmpty()
+        val audioFile = when (val content = message.content) {
+            is TdApi.MessageAudio -> content.audio.audio
+            is TdApi.MessageVoiceNote -> content.voiceNote.voice
+            else -> null
+        }
+        val localFile = photoFile?.local ?: audioFile?.local
+        val mediaType = when {
+            photoFile != null -> "photo"
+            message.content is TdApi.MessageAudio -> "audio"
+            message.content is TdApi.MessageVoiceNote -> "voice"
+            else -> null
+        }
+        val caption = when (val content = message.content) {
+            is TdApi.MessagePhoto -> content.caption.text
+            is TdApi.MessageAudio -> content.caption.text
+            is TdApi.MessageVoiceNote -> content.caption.text
+            else -> ""
+        }
         return TelegramMessage(
             id = message.id,
             chatId = message.chatId,
             text = when (message.content) {
                 is TdApi.MessageText -> messagePreview(message.content)
                 is TdApi.MessagePhoto -> caption
+                is TdApi.MessageAudio -> caption.ifBlank { message.content.audio.title.ifBlank { "Audio" } }
+                is TdApi.MessageVoiceNote -> "Voice message"
                 else -> messagePreview(message.content)
             },
             date = message.date,
             isOutgoing = message.isOutgoing,
-            mediaType = if (photoFile != null) "photo" else null,
-            mediaFileId = photoFile?.id,
+            mediaType = mediaType,
+            mediaFileId = photoFile?.id ?: audioFile?.id,
             mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true
@@ -389,6 +407,7 @@ class NativeTdLibBridge : TelegramClientBridge {
         is TdApi.MessageVideo -> "Video"
         is TdApi.MessageDocument -> content.document.fileName.ifBlank { "File" }
         is TdApi.MessageVoiceNote -> "Voice message"
+        is TdApi.MessageAudio -> content.audio.title.ifBlank { "Audio" }
         is TdApi.MessageAnimation -> "GIF"
         is TdApi.MessageSticker -> "Sticker"
         else -> "Message"

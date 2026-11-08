@@ -92,6 +92,10 @@ class TelegramRepositoryImpl(
         clientBridge.toggleChatPinned(chatId, isPinned)
     }
 
+    override suspend fun toggleChatMarkedUnread(chatId: Long, isMarkedAsUnread: Boolean): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.toggleChatMarkedUnread(chatId, isMarkedAsUnread)
+    }
+
     override suspend fun openChat(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.openChat(chatId) }
 
     override suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit> = withContext(ioDispatcher) {

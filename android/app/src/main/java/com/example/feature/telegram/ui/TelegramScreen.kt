@@ -230,6 +230,9 @@ fun TelegramScreen(
                         messages = uiState.messages,
                         selectedChatId = uiState.selectedChatId,
                         isLoadingChats = uiState.isLoadingChats,
+                        messageDraft = uiState.messageDraft,
+                        onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
+                        onSendMessage = { viewModel.sendMessage() },
                         onRefreshChats = { viewModel.refreshChats() },
                         onOpenChat = { viewModel.openChat(it) },
                         onCloseChat = { viewModel.closeChat() },
@@ -671,6 +674,9 @@ private fun AuthenticatedUserCard(
     messages: List<com.example.feature.telegram.model.TelegramMessage>,
     selectedChatId: Long?,
     isLoadingChats: Boolean,
+    messageDraft: String,
+    onMessageDraftChange: (String) -> Unit,
+    onSendMessage: () -> Unit,
     onRefreshChats: () -> Unit,
     onOpenChat: (Long) -> Unit,
     onCloseChat: () -> Unit,
@@ -776,6 +782,30 @@ private fun AuthenticatedUserCard(
                                 }
                             }
                         }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = messageDraft,
+                        onValueChange = onMessageDraftChange,
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Message", color = TextMuted) },
+                        maxLines = 4,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = TelegramBlue,
+                            unfocusedBorderColor = BorderHairline,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = BackgroundDark,
+                            unfocusedContainerColor = BackgroundDark
+                        ),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    IconButton(onClick = onSendMessage, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
+                        Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)
                     }
                 }
             }

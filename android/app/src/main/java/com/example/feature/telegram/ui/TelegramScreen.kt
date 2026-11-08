@@ -228,6 +228,17 @@ fun TelegramScreen(
                     )
                 }
 
+                is TelegramAuthState.WaitRegistration -> {
+                    RegistrationCard(
+                        firstName = uiState.registrationFirstName,
+                        lastName = uiState.registrationLastName,
+                        isLoading = uiState.isLoading,
+                        onFirstNameChange = { viewModel.onRegistrationFirstNameChanged(it) },
+                        onLastNameChange = { viewModel.onRegistrationLastNameChanged(it) },
+                        onSubmit = { viewModel.submitRegistration() }
+                    )
+                }
+
                 is TelegramAuthState.Authenticated -> {
                     AuthenticatedUserCard(
                         user = state.user,
@@ -748,6 +759,55 @@ private fun AuthenticatedUserCard(
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6B2121))
             ) {
                 Text("Disconnect Telegram Session")
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegistrationCard(
+    firstName: String,
+    lastName: String,
+    isLoading: Boolean,
+    onFirstNameChange: (String) -> Unit,
+    onLastNameChange: (String) -> Unit,
+    onSubmit: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = SurfaceCard,
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text("Complete Telegram Registration", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text("Your number is verified. Enter your name to finish setting up your Telegram account.", fontSize = 13.sp, color = TextSecondary)
+            Spacer(modifier = Modifier.height(14.dp))
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = onFirstNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("First name") },
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = lastName,
+                onValueChange = onLastNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Last name (optional)") },
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onSubmit,
+                enabled = !isLoading && firstName.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
+            ) {
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("Finish Registration")
             }
         }
     }

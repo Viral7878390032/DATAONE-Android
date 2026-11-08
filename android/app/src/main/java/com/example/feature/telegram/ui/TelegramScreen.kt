@@ -101,6 +101,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // Premium Dark Theme Palette for DATAONE Telegram Module
 private val BackgroundDark = Color(0xFF0B111A)
@@ -883,7 +886,26 @@ private fun AuthenticatedUserCard(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(chat.title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            chat.title,
+                                            modifier = Modifier.weight(1f),
+                                            color = TextPrimary,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 15.sp,
+                                            maxLines = 1
+                                        )
+                                        if (chat.lastMessageDate > 0) {
+                                            Text(
+                                                formatTelegramChatTime(chat.lastMessageDate),
+                                                color = TextMuted,
+                                                fontSize = 11.sp
+                                            )
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(chat.lastMessage, color = TextSecondary, fontSize = 13.sp, maxLines = 1)
                                 }
@@ -1502,4 +1524,9 @@ private fun ApiCredentialsDialog(
             }
         }
     )
+}
+
+
+private fun formatTelegramChatTime(timestamp: Int): String {
+    return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp * 1000L))
 }

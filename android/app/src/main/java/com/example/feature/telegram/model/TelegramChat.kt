@@ -5,5 +5,6 @@ data class TelegramChat(
     val title: String,
     val lastMessage: String,
     val lastMessageDate: Int,
-    val unreadCount: Int
+    val unreadCount: Int,
+    val isPinned: Boolean = false
 )

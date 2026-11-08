@@ -6,6 +6,8 @@ import com.example.feature.telegram.bridge.NativeTdLibBridge
 import com.example.feature.telegram.bridge.TelegramClientBridge
 import com.example.feature.telegram.bridge.TelegramInitParams
 import com.example.feature.telegram.model.TelegramAuthState
+import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramMessage
 import com.example.feature.telegram.model.TelegramMediaConfig
 import com.example.feature.telegram.security.TelegramSessionSecurity
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,6 +32,8 @@ class TelegramRepositoryImpl(
 ) : TelegramRepository {
 
     override val authState: StateFlow<TelegramAuthState> = clientBridge.authState
+    override val chats: StateFlow<List<TelegramChat>> = clientBridge.chats
+    override val messages: StateFlow<List<TelegramMessage>> = clientBridge.messages
 
     override val isNativeLibraryAvailable: Boolean
         get() = clientBridge.isNativeLibraryAvailable
@@ -81,6 +85,10 @@ class TelegramRepositoryImpl(
         security.clearSession()
         clientBridge.logout()
     }
+
+    override suspend fun refreshChats(): Result<Unit> = withContext(ioDispatcher) { clientBridge.refreshChats() }
+
+    override suspend fun openChat(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.openChat(chatId) }
 
     override suspend fun requestMediaDownload(fileId: Int): Result<Unit> = withContext(ioDispatcher) {
         clientBridge.downloadFileOnDemand(fileId, priority = 1)

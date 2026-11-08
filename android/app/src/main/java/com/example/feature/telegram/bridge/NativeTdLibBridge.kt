@@ -118,9 +118,6 @@ class NativeTdLibBridge : TelegramClientBridge {
                     request.applicationVersion = params.applicationVersion
                     sendRequest(request)
                 }
-                is TdApi.AuthorizationStateWaitEncryptionKey -> {
-                    sendRequest(TdApi.CheckDatabaseEncryptionKey(params.databaseEncryptionKey))
-                }
                 is TdApi.AuthorizationStateWaitPhoneNumber -> {
                     _authState.value = TelegramAuthState.WaitPhoneNumber()
                 }

@@ -120,15 +120,10 @@ fun TelegramScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Telegram Integration",
-                            fontSize = 18.sp,
+                            text = "Telegram",
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = TextPrimary
-                        )
-                        Text(
-                            text = "DATAONE Official TDLib Engine",
-                            fontSize = 12.sp,
-                            color = TextSecondary
                         )
                     }
                 },
@@ -138,15 +133,6 @@ fun TelegramScreen(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
                             tint = TextPrimary
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.openApiCredentialDialog() }) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = "Credentials Configuration",
-                            tint = TelegramBlue
                         )
                     }
                 },
@@ -162,22 +148,9 @@ fun TelegramScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Native Library Status Badge (No fake binaries)
-            if (!uiState.isNativeLibraryAvailable) {
-                MissingNativeLibraryBanner(
-                    onConfigureClick = { viewModel.openApiCredentialDialog() }
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            // Hero Brand / TDLib Header
-            TelegramBrandHero()
-
-            Spacer(modifier = Modifier.height(24.dp))
-
             // Dynamic Authorization Card driven by TDLib AuthState
             when (val state = uiState.authState) {
                 is TelegramAuthState.Uninitialized -> {
@@ -200,9 +173,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitTdLibParameters -> {
-                    WaitParametersCard(
-                        onOpenSettings = { viewModel.openApiCredentialDialog() }
-                    )
+                    WaitParametersCard()
                 }
 
                 is TelegramAuthState.WaitPhoneNumber -> {
@@ -280,24 +251,9 @@ fun TelegramScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Architecture & Security Disclosure Card
-            DataoneSecurityPolicyCard()
         }
     }
 
-    // Modal Dialog for Setting API Credentials dynamically (never hardcoded in source)
-    if (uiState.showApiCredentialDialog) {
-        ApiCredentialsDialog(
-            apiId = uiState.apiIdInput,
-            apiHash = uiState.apiHashInput,
-            onApiIdChange = { viewModel.onApiIdChanged(it) },
-            onApiHashChange = { viewModel.onApiHashChanged(it) },
-            onDismiss = { viewModel.dismissApiCredentialDialog() },
-            onSave = { viewModel.saveApiCredentials() }
-        )
-    }
 }
 
 @Composable
@@ -917,7 +873,7 @@ private fun ConnectingStateCard() {
 }
 
 @Composable
-private fun WaitParametersCard(onOpenSettings: () -> Unit) {
+private fun WaitParametersCard() {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = SurfaceCard,
@@ -925,26 +881,20 @@ private fun WaitParametersCard(onOpenSettings: () -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
+            CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(28.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "API Credentials Required",
+                text = "Preparing Telegram",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "TDLib requires an api_id and api_hash. Configure them securely in Keystore.",
+                text = "Please wait while DATAONE connects securely.",
                 fontSize = 13.sp,
                 color = TextSecondary
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onOpenSettings,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
-            ) {
-                Text("Configure API Credentials")
-            }
         }
     }
 }

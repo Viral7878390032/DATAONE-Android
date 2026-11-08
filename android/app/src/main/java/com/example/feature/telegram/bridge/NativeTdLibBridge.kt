@@ -344,12 +344,13 @@ class NativeTdLibBridge : TelegramClientBridge {
     }
 
     private fun toTelegramMessage(message: TdApi.Message): TelegramMessage {
-        val photoFile = (message.content as? TdApi.MessagePhoto)
+        val messageContent = messageContent
+        val photoFile = (messageContent as? TdApi.MessagePhoto)
             ?.photo
             ?.sizes
             ?.maxByOrNull { size -> size.width.toLong() * size.height.toLong() }
             ?.photo
-        val audioFile = when (val content = message.content) {
+        val audioFile = when (val content = messageContent) {
             is TdApi.MessageAudio -> content.audio.audio
             is TdApi.MessageVoiceNote -> content.voiceNote.voice
             else -> null
@@ -357,11 +358,11 @@ class NativeTdLibBridge : TelegramClientBridge {
         val localFile = photoFile?.local ?: audioFile?.local
         val mediaType = when {
             photoFile != null -> "photo"
-            message.content is TdApi.MessageAudio -> "audio"
-            message.content is TdApi.MessageVoiceNote -> "voice"
+            messageContent is TdApi.MessageAudio -> "audio"
+            messageContent is TdApi.MessageVoiceNote -> "voice"
             else -> null
         }
-        val caption = when (val content = message.content) {
+        val caption = when (val content = messageContent) {
             is TdApi.MessagePhoto -> content.caption.text
             is TdApi.MessageAudio -> content.caption.text
             is TdApi.MessageVoiceNote -> content.caption.text
@@ -370,12 +371,12 @@ class NativeTdLibBridge : TelegramClientBridge {
         return TelegramMessage(
             id = message.id,
             chatId = message.chatId,
-            text = when (message.content) {
-                is TdApi.MessageText -> messagePreview(message.content)
+            text = when (messageContent) {
+                is TdApi.MessageText -> messagePreview(messageContent)
                 is TdApi.MessagePhoto -> caption
-                is TdApi.MessageAudio -> caption.ifBlank { message.content.audio.title.ifBlank { "Audio" } }
+                is TdApi.MessageAudio -> caption.ifBlank { messageContent.audio.title.ifBlank { "Audio" } }
                 is TdApi.MessageVoiceNote -> "Voice message"
-                else -> messagePreview(message.content)
+                else -> messagePreview(messageContent)
             },
             date = message.date,
             isOutgoing = message.isOutgoing,

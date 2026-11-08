@@ -245,11 +245,14 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun refreshChats(): Result<Unit> = try {
         // TDLib returns chat IDs in its main chat-list order. Request the largest
         // supported page and hydrate chat details with bounded concurrency.
-        val result = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 1000)) as TdApi.Chats
+        val mainResult = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 1000)) as TdApi.Chats
+        val archiveResult = sendRequest(TdApi.GetChats(TdApi.ChatListArchive(), 1000)) as TdApi.Chats
+        val archivedIds = archiveResult.chatIds.toSet()
+        val allChatIds = (mainResult.chatIds.toList() + archiveResult.chatIds.toList()).distinct()
         val loaded = mutableListOf<TelegramChat>()
         val semaphore = Semaphore(12)
 
-        result.chatIds.toList().chunked(40).forEach { batch ->
+        allChatIds.chunked(40).forEach { batch ->
             val hydrated = coroutineScope {
                 batch.map { id ->
                     async {
@@ -263,7 +266,8 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     lastMessageDate = chat.lastMessage?.date ?: 0,
                                     unreadCount = chat.unreadCount,
                                     isPinned = chat.positions.any { it.list is TdApi.ChatListMain && it.isPinned },
-                                    isMarkedAsUnread = chat.isMarkedAsUnread
+                                    isMarkedAsUnread = chat.isMarkedAsUnread,
+                                    isArchived = chat.id in archivedIds
                                 )
                             } catch (error: Throwable) {
                                 Log.w(tag, "Could not load Telegram chat $id", error)
@@ -291,6 +295,15 @@ class NativeTdLibBridge : TelegramClientBridge {
 
     override suspend fun toggleChatMarkedUnread(chatId: Long, isMarkedAsUnread: Boolean): Result<Unit> = try {
         sendRequest(TdApi.ToggleChatIsMarkedAsUnread(chatId, isMarkedAsUnread))
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
+
+    override suspend fun toggleChatArchived(chatId: Long, isArchived: Boolean): Result<Unit> = try {
+        val destination = if (isArchived) TdApi.ChatListArchive() else TdApi.ChatListMain()
+        sendRequest(TdApi.AddChatToList(chatId, destination))
         refreshChats()
         Result.success(Unit)
     } catch (error: Throwable) {

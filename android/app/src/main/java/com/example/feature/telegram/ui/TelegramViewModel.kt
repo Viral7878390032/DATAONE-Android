@@ -81,6 +81,15 @@ class TelegramViewModel(
         }
     }
 
+    fun toggleChatArchived(chatId: Long, isArchived: Boolean) {
+        viewModelScope.launch {
+            val result = repository.toggleChatArchived(chatId, isArchived)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to archive chat.") }
+            }
+        }
+    }
+
     fun openChat(chatId: Long) {
         viewModelScope.launch {
             _uiState.update { current ->

@@ -272,6 +272,7 @@ fun TelegramScreen(
                         onRefreshChats = { viewModel.refreshChats() },
                         onToggleChatPinned = { chatId, isPinned -> viewModel.toggleChatPinned(chatId, isPinned) },
                         onToggleChatMarkedUnread = { chatId, marked -> viewModel.toggleChatMarkedUnread(chatId, marked) },
+                        onToggleChatArchived = { chatId, archived -> viewModel.toggleChatArchived(chatId, archived) },
                         onOpenChat = { viewModel.openChat(it) },
                         onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
@@ -722,6 +723,7 @@ private fun AuthenticatedUserCard(
     onRefreshChats: () -> Unit,
     onToggleChatPinned: (Long, Boolean) -> Unit,
     onToggleChatMarkedUnread: (Long, Boolean) -> Unit,
+    onToggleChatArchived: (Long, Boolean) -> Unit,
     onOpenChat: (Long) -> Unit,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
@@ -730,7 +732,9 @@ private fun AuthenticatedUserCard(
     val coroutineScope = rememberCoroutineScope()
     var chatSearchQuery by remember { mutableStateOf("") }
     var showUnreadOnly by remember { mutableStateOf(false) }
-    val filteredChats = chats.filter { chat ->
+    var showArchivedOnly by remember { mutableStateOf(false) }
+    val visibleChats = chats.filter { it.isArchived == showArchivedOnly }
+    val filteredChats = visibleChats.filter { chat ->
         (!showUnreadOnly || chat.unreadCount > 0) &&
             (chat.title.contains(chatSearchQuery, ignoreCase = true) ||
                 chat.lastMessage.contains(chatSearchQuery, ignoreCase = true))
@@ -830,8 +834,8 @@ private fun AuthenticatedUserCard(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("All chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    Text("${chats.size}", color = TextSecondary, fontSize = 12.sp)
+                    Text(if (showArchivedOnly) "Archived chats" else "All chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Text("${visibleChats.size}", color = TextSecondary, fontSize = 12.sp)
                 }
                 OutlinedTextField(
                     value = chatSearchQuery,
@@ -864,14 +868,23 @@ private fun AuthenticatedUserCard(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                     ) { Text("All (${chats.size})", fontSize = 12.sp) }
                     OutlinedButton(
-                        onClick = { showUnreadOnly = true },
+                        onClick = { showUnreadOnly = true; showArchivedOnly = false },
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (showUnreadOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
-                            contentColor = if (showUnreadOnly) TelegramBlue else TextSecondary
+                            containerColor = if (showUnreadOnly && !showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
+                            contentColor = if (showUnreadOnly && !showArchivedOnly) TelegramBlue else TextSecondary
                         ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (showUnreadOnly) TelegramBlue else BorderHairline),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (showUnreadOnly && !showArchivedOnly) TelegramBlue else BorderHairline),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                    ) { Text("Unread (${chats.count { it.unreadCount > 0 }})", fontSize = 12.sp) }
+                    ) { Text("Unread (${chats.count { !it.isArchived && it.unreadCount > 0 }})", fontSize = 12.sp) }
+                    OutlinedButton(
+                        onClick = { showArchivedOnly = !showArchivedOnly; showUnreadOnly = false },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
+                            contentColor = if (showArchivedOnly) TelegramBlue else TextSecondary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (showArchivedOnly) TelegramBlue else BorderHairline),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) { Text("Archived (${chats.count { it.isArchived }})", fontSize = 12.sp) }
                 }
                 if (chats.isEmpty() && isLoadingChats) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
@@ -937,6 +950,12 @@ private fun AuthenticatedUserCard(
                                             color = if (chat.isMarkedAsUnread) TelegramBlue else TextMuted,
                                             fontSize = 11.sp
                                         )
+                                    }
+                                    TextButton(
+                                        onClick = { onToggleChatArchived(chat.id, !chat.isArchived) },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                    ) {
+                                        Text(if (chat.isArchived) "Restore" else "Archive", color = TelegramBlue, fontSize = 11.sp)
                                     }
                                     if (chat.unreadCount > 0) {
                                         Box(modifier = Modifier.clip(CircleShape).background(TelegramBlue).padding(horizontal = 7.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {

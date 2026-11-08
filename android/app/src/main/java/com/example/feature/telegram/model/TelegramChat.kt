@@ -6,11 +6,3 @@ data class TelegramChat(
     val lastMessage: String,
     val unreadCount: Int
 )
-
-data class TelegramMessage(
-    val id: Long,
-    val chatId: Long,
-    val text: String,
-    val date: Int,
-    val isOutgoing: Boolean
-)

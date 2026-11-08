@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.BitmapFactory
+import android.provider.OpenableColumns
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.foundation.Image
@@ -253,6 +254,7 @@ fun TelegramScreen(
                         onSendMessage = { viewModel.sendMessage() },
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
+                        onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
                         onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
                         onOpenChat = { viewModel.openChat(it) },
@@ -700,6 +702,7 @@ private fun AuthenticatedUserCard(
     onSendMessage: () -> Unit,
     onSendPhoto: (String) -> Unit,
     onSendVideo: (String) -> Unit,
+    onSendDocument: (String) -> Unit,
     onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
     onOpenChat: (Long) -> Unit,
@@ -735,6 +738,31 @@ private fun AuthenticatedUserCard(
                     copied
                 }
                 if (copiedFile != null) onSendVideo(copiedFile.absolutePath)
+            }
+        }
+    }
+    val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val copiedFile = withContext(Dispatchers.IO) {
+                    val displayName = context.contentResolver.query(
+                        uri,
+                        arrayOf(OpenableColumns.DISPLAY_NAME),
+                        null,
+                        null,
+                        null
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getString(0) else null
+                    } ?: "attachment-${System.currentTimeMillis()}"
+                    val safeName = displayName.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(100)
+                        .ifBlank { "attachment.bin" }
+                    val destination = File(context.cacheDir, "telegram-file-${System.currentTimeMillis()}-$safeName")
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        destination.outputStream().use { output -> input.copyTo(output) }
+                        destination
+                    }
+                }
+                if (copiedFile != null) onSendDocument(copiedFile.absolutePath)
             }
         }
     }
@@ -877,6 +905,9 @@ private fun AuthenticatedUserCard(
                     }
                     IconButton(onClick = { videoPicker.launch("video/*") }, enabled = !isLoadingChats) {
                         Icon(Icons.Default.Info, contentDescription = "Choose video", tint = TelegramBlue)
+                    }
+                    IconButton(onClick = { documentPicker.launch(arrayOf("*/*")) }, enabled = !isLoadingChats) {
+                        Icon(Icons.Default.Info, contentDescription = "Choose file", tint = TelegramBlue)
                     }
                     IconButton(onClick = onSendMessage, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)

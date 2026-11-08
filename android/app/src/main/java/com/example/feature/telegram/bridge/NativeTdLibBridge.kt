@@ -9,6 +9,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -235,24 +240,38 @@ class NativeTdLibBridge : TelegramClientBridge {
     }
 
     override suspend fun refreshChats(): Result<Unit> = try {
-        val result = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 100)) as TdApi.Chats
+        // TDLib returns chat IDs in its main chat-list order. Request the largest
+        // supported page and hydrate chat details with bounded concurrency.
+        val result = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 1000)) as TdApi.Chats
         val loaded = mutableListOf<TelegramChat>()
-        for (id in result.chatIds) {
-            try {
-                val chat = sendRequest(TdApi.GetChat(id)) as TdApi.Chat
-                loaded.add(
-                    TelegramChat(
-                        id = chat.id,
-                        title = chat.title,
-                        lastMessage = chat.lastMessage?.let { messagePreview(it.content) } ?: "No messages yet",
-                        unreadCount = chat.unreadCount
-                    )
-                )
-            } catch (error: Throwable) {
-                Log.w(tag, "Could not load Telegram chat $id", error)
+        val semaphore = Semaphore(12)
+
+        result.chatIds.toList().chunked(40).forEach { batch ->
+            val hydrated = coroutineScope {
+                batch.map { id ->
+                    async {
+                        semaphore.withPermit {
+                            try {
+                                val chat = sendRequest(TdApi.GetChat(id)) as TdApi.Chat
+                                TelegramChat(
+                                    id = chat.id,
+                                    title = chat.title,
+                                    lastMessage = chat.lastMessage?.let { messagePreview(it.content) } ?: "No messages yet",
+                                    unreadCount = chat.unreadCount
+                                )
+                            } catch (error: Throwable) {
+                                Log.w(tag, "Could not load Telegram chat $id", error)
+                                null
+                            }
+                        }
+                    }
+                }.awaitAll()
             }
+            loaded.addAll(hydrated.filterNotNull())
+            // Publish each batch so the list fills progressively instead of
+            // leaving the user staring at a spinner until every chat is hydrated.
+            _chats.value = loaded.toList()
         }
-        _chats.value = loaded
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 

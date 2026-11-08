@@ -735,12 +735,17 @@ private fun AuthenticatedUserCard(
     var chatSearchQuery by remember { mutableStateOf("") }
     var showUnreadOnly by remember { mutableStateOf(false) }
     var showArchivedOnly by remember { mutableStateOf(false) }
+    var sortChatsByName by remember { mutableStateOf(false) }
     val visibleChats = chats.filter { it.isArchived == showArchivedOnly }
     val filteredChats = visibleChats.filter { chat ->
         (!showUnreadOnly || chat.unreadCount > 0) &&
             (chat.title.contains(chatSearchQuery, ignoreCase = true) ||
                 chat.lastMessage.contains(chatSearchQuery, ignoreCase = true))
-    }.sortedByDescending { it.isPinned }
+    }.sortedWith(
+        compareByDescending<com.example.feature.telegram.model.TelegramChat> { it.isPinned }
+            .thenBy { if (sortChatsByName) it.title.lowercase() else "" }
+            .thenByDescending { if (sortChatsByName) 0 else it.lastMessageDate }
+    )
     var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
     val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -837,6 +842,13 @@ private fun AuthenticatedUserCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(if (showArchivedOnly) "Archived chats" else "All chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    OutlinedButton(
+                        onClick = { sortChatsByName = !sortChatsByName },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
+                    ) {
+                        Text(if (sortChatsByName) "Sort: Name" else "Sort: Recent", fontSize = 11.sp, color = TelegramBlue)
+                    }
                     Text("${visibleChats.size}", color = TextSecondary, fontSize = 12.sp)
                 }
                 OutlinedTextField(

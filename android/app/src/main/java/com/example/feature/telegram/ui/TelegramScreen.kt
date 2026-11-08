@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -251,6 +252,13 @@ fun TelegramScreen(
                     AuthenticatedUserCard(
                         user = state.user,
                         isLoading = uiState.isLoading,
+                        chats = uiState.chats,
+                        messages = uiState.messages,
+                        selectedChatId = uiState.selectedChatId,
+                        isLoadingChats = uiState.isLoadingChats,
+                        onRefreshChats = { viewModel.refreshChats() },
+                        onOpenChat = { viewModel.openChat(it) },
+                        onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
                     )
                 }
@@ -700,6 +708,13 @@ private fun TwoFactorPasswordCard(
 private fun AuthenticatedUserCard(
     user: TelegramUser,
     isLoading: Boolean,
+    chats: List<com.example.feature.telegram.model.TelegramChat>,
+    messages: List<com.example.feature.telegram.model.TelegramMessage>,
+    selectedChatId: Long?,
+    isLoadingChats: Boolean,
+    onRefreshChats: () -> Unit,
+    onOpenChat: (Long) -> Unit,
+    onCloseChat: () -> Unit,
     onLogout: () -> Unit
 ) {
     Surface(
@@ -750,6 +765,52 @@ private fun AuthenticatedUserCard(
                     tint = StatusSuccess,
                     modifier = Modifier.size(24.dp)
                 )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            if (selectedChatId == null) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("Your Telegram chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onRefreshChats, enabled = !isLoadingChats) { Text("Refresh", color = TelegramBlue) }
+                }
+                if (isLoadingChats) {
+                    CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(24.dp))
+                } else if (chats.isEmpty()) {
+                    Text("No chats found yet. Pull Refresh to load again.", color = TextSecondary, fontSize = 13.sp)
+                } else {
+                    chats.forEach { chat ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(modifier = Modifier.size(42.dp).clip(CircleShape).background(TelegramBlue), contentAlignment = Alignment.Center) {
+                                Text(chat.title.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(chat.title, color = TextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                Text(chat.lastMessage, color = TextSecondary, fontSize = 12.sp, maxLines = 1)
+                            }
+                            if (chat.unreadCount > 0) Text(chat.unreadCount.toString(), color = Color.White, fontSize = 12.sp)
+                        }
+                        androidx.compose.material3.HorizontalDivider(color = BorderHairline)
+                    }
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    TextButton(onClick = onCloseChat) { Text("← Chats", color = TelegramBlue) }
+                    Text(chats.firstOrNull { it.id == selectedChatId }?.title ?: "Conversation", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                }
+                if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(24.dp))
+                messages.forEach { message ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start) {
+                        Surface(color = if (message.isOutgoing) Color(0xFF164C6B) else SurfaceDark, shape = RoundedCornerShape(12.dp), modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(0.88f)) {
+                            Text(message.text, color = TextPrimary, modifier = Modifier.padding(12.dp), fontSize = 14.sp)
+                        }
+                    }
+                }
+                if (messages.isEmpty() && !isLoadingChats) Text("No messages to show.", color = TextSecondary)
             }
 
             Spacer(modifier = Modifier.height(20.dp))

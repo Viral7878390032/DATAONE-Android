@@ -735,10 +735,12 @@ private fun AuthenticatedUserCard(
     var chatSearchQuery by remember { mutableStateOf("") }
     var showUnreadOnly by remember { mutableStateOf(false) }
     var showArchivedOnly by remember { mutableStateOf(false) }
+    var showMutedOnly by remember { mutableStateOf(false) }
     var sortChatsByName by remember { mutableStateOf(false) }
     val visibleChats = chats.filter { it.isArchived == showArchivedOnly }
     val filteredChats = visibleChats.filter { chat ->
         (!showUnreadOnly || chat.unreadCount > 0) &&
+            (!showMutedOnly || chat.isMuted) &&
             (chat.title.contains(chatSearchQuery, ignoreCase = true) ||
                 chat.lastMessage.contains(chatSearchQuery, ignoreCase = true))
     }.sortedWith(
@@ -899,6 +901,22 @@ private fun AuthenticatedUserCard(
                         border = androidx.compose.foundation.BorderStroke(1.dp, if (showArchivedOnly) TelegramBlue else BorderHairline),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) { Text("Archived (${chats.count { it.isArchived }})", fontSize = 12.sp) }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    OutlinedButton(
+                        onClick = { showMutedOnly = !showMutedOnly; showArchivedOnly = false; showUnreadOnly = false },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (showMutedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
+                            contentColor = if (showMutedOnly) TelegramBlue else TextSecondary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (showMutedOnly) TelegramBlue else BorderHairline),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Text("Muted (${chats.count { !it.isArchived && it.isMuted }})", fontSize = 12.sp)
+                    }
                 }
                 if (chats.isEmpty() && isLoadingChats) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }

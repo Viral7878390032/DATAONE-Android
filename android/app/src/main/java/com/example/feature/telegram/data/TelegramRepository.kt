@@ -1,6 +1,8 @@
 package com.example.feature.telegram.data
 
 import com.example.feature.telegram.model.TelegramAuthState
+import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramMessage
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -16,6 +18,8 @@ interface TelegramRepository {
     /**
      * Flag indicating whether TDLib native C++ binaries are loaded.
      */
+    val chats: StateFlow<List<TelegramChat>>
+    val messages: StateFlow<List<TelegramMessage>>
     val isNativeLibraryAvailable: Boolean
 
     /**
@@ -51,6 +55,10 @@ interface TelegramRepository {
     /**
      * Downloads specific media file on demand (strictly no auto-download).
      */
+    suspend fun refreshChats(): Result<Unit>
+
+    suspend fun openChat(chatId: Long): Result<Unit>
+
     suspend fun requestMediaDownload(fileId: Int): Result<Unit>
 
     /**

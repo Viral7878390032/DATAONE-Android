@@ -236,11 +236,21 @@ class NativeTdLibBridge : TelegramClientBridge {
 
     override suspend fun refreshChats(): Result<Unit> = try {
         val result = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 100)) as TdApi.Chats
-        val loaded = result.chatIds.mapNotNull { id ->
+        val loaded = mutableListOf<TelegramChat>()
+        for (id in result.chatIds) {
             try {
                 val chat = sendRequest(TdApi.GetChat(id)) as TdApi.Chat
-                TelegramChat(id = chat.id, title = chat.title, lastMessage = chat.lastMessage?.let { messagePreview(it.content) } ?: "No messages yet", unreadCount = chat.unreadCount)
-            } catch (_: Throwable) { null }
+                loaded.add(
+                    TelegramChat(
+                        id = chat.id,
+                        title = chat.title,
+                        lastMessage = chat.lastMessage?.let { messagePreview(it.content) } ?: "No messages yet",
+                        unreadCount = chat.unreadCount
+                    )
+                )
+            } catch (error: Throwable) {
+                Log.w(tag, "Could not load Telegram chat $id", error)
+            }
         }
         _chats.value = loaded
         Result.success(Unit)

@@ -163,7 +163,6 @@ class NativeTdLibBridge : TelegramClientBridge {
                             id = me.id,
                             firstName = me.firstName,
                             lastName = me.lastName,
-                            username = me.usernames?.activeUsernames?.firstOrNull(),
                             phoneNumber = me.phoneNumber
                         )
                     )

@@ -88,6 +88,10 @@ class TelegramRepositoryImpl(
 
     override suspend fun refreshChats(): Result<Unit> = withContext(ioDispatcher) { clientBridge.refreshChats() }
 
+    override suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.toggleChatPinned(chatId, isPinned)
+    }
+
     override suspend fun openChat(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.openChat(chatId) }
 
     override suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit> = withContext(ioDispatcher) {

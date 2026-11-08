@@ -44,8 +44,35 @@ class TelegramViewModel(
                         }
                     )
                 }
+                if (authState is TelegramAuthState.Authenticated) refreshChats()
             }
         }
+        viewModelScope.launch {
+            repository.chats.collect { chats -> _uiState.update { it.copy(chats = chats) } }
+        }
+        viewModelScope.launch {
+            repository.messages.collect { messages -> _uiState.update { it.copy(messages = messages) } }
+        }
+    }
+
+    fun refreshChats() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            val result = repository.refreshChats()
+            _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
+    fun openChat(chatId: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingChats = true, selectedChatId = chatId, errorMessage = null) }
+            val result = repository.openChat(chatId)
+            _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
+    fun closeChat() {
+        _uiState.update { it.copy(selectedChatId = null) }
     }
 
     fun startConnection() {

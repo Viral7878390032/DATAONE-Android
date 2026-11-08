@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import android.graphics.BitmapFactory
+import android.widget.MediaController
+import android.widget.VideoView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,6 +66,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -791,6 +796,9 @@ private fun AuthenticatedUserCard(
                                         if (message.mediaType == "photo") {
                                             TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
                                         }
+                                        if (message.mediaType == "video") {
+                                            TelegramVideoContent(message = message, onDownloadMedia = onDownloadMedia)
+                                        }
                                         if (message.text.isNotBlank()) {
                                             Text(message.text, color = TextPrimary, modifier = Modifier.padding(top = if (message.mediaType == "photo") 6.dp else 0.dp), fontSize = 14.sp)
                                         } else if (message.mediaType != "photo") {
@@ -884,6 +892,70 @@ private fun TelegramPhotoContent(
                     colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
                 ) {
                     Text(if (message.isMediaDownloaded) "Retry photo" else "Download photo")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TelegramVideoContent(
+    message: com.example.feature.telegram.model.TelegramMessage,
+    onDownloadMedia: (Int) -> Unit
+) {
+    var isPlaying by remember(message.id) { mutableStateOf(false) }
+    val videoPath = message.mediaFilePath
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceCard)
+            .padding(12.dp)
+    ) {
+        if (videoPath != null && isPlaying) {
+            AndroidView(
+                factory = { context ->
+                    VideoView(context).apply {
+                        setVideoPath(videoPath)
+                        setMediaController(MediaController(context).also { it.setAnchorView(this) })
+                        setOnPreparedListener { player -> player.start() }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+            )
+        } else {
+            Text("Video message", color = TextPrimary, fontWeight = FontWeight.Medium)
+            Text(
+                text = if (message.isMediaDownloading) "Downloading video..." else "Video is not downloaded",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            if (message.isMediaDownloading) {
+                CircularProgressIndicator(
+                    color = TelegramBlue,
+                    modifier = Modifier.padding(top = 10.dp).size(22.dp),
+                    strokeWidth = 2.dp
+                )
+            } else if (videoPath != null) {
+                Button(
+                    onClick = { isPlaying = true },
+                    modifier = Modifier.padding(top = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
+                ) {
+                    Text("Play video")
+                }
+            } else {
+                Button(
+                    onClick = { message.mediaFileId?.let(onDownloadMedia) },
+                    enabled = message.mediaFileId != null,
+                    modifier = Modifier.padding(top = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
+                ) {
+                    Text("Download video")
                 }
             }
         }

@@ -293,7 +293,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             null,
             true
         )
-        sendRequest(TdApi.SendMessage(chatId, 0, null, null, null, content))
+        sendRequest(TdApi.SendMessage(chatId, null, null, null, null, content))
         openChat(chatId)
     } catch (error: Throwable) {
         Result.failure(error)

@@ -158,7 +158,12 @@ class NativeTdLibBridge : TelegramClientBridge {
                     _authState.value = TelegramAuthState.Closed
                 }
                 else -> {
-                    Log.w(tag, "Unhandled TDLib authorization state: ${state.javaClass.simpleName}")
+                    val stateName = state.javaClass.simpleName
+                    val details = state.toString()
+                    Log.e(tag, "Unhandled TDLib authorization state: $stateName | $details")
+                    _authState.value = TelegramAuthState.Error(
+                        "Telegram needs an authorization step that DATAONE does not support yet: $stateName. Details: $details"
+                    )
                 }
             }
         } catch (error: Throwable) {

@@ -288,10 +288,9 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The selected photo could not be opened." }
-        // TDLib 1.8.x exposes local image attachments through InputMessageDocument.
-        // Keep the original image filename so Telegram recognizes the image format.
-        val content = TdApi.InputMessageDocument()
-        content.document = TdApi.InputFileLocal(path)
+        // The bundled TDLib version uses the InputPhotoLocal subtype.
+        val content = TdApi.InputMessagePhoto()
+        content.photo = TdApi.InputPhotoLocal(path)
         content.caption = TdApi.FormattedText(caption, emptyArray())
         sendRequest(TdApi.SendMessage(chatId, null, null, null, null, content))
         openChat(chatId)

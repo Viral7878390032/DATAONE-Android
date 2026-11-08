@@ -105,6 +105,23 @@ class TelegramViewModel(
         }
     }
 
+    fun sendVideoMessage(path: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        if (path.isBlank()) return
+        val caption = _uiState.value.messageDraft.trim()
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            val result = repository.sendVideoMessage(chatId, path, caption)
+            _uiState.update {
+                it.copy(
+                    isLoadingChats = false,
+                    messageDraft = if (result.isSuccess) "" else it.messageDraft,
+                    errorMessage = result.exceptionOrNull()?.message
+                )
+            }
+        }
+    }
+
     fun sendMessage() {
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()

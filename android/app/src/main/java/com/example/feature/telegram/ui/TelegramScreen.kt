@@ -37,6 +37,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
@@ -807,7 +812,7 @@ private fun AuthenticatedUserCard(
                     }
                     IconButton(onClick = onRefreshChats, enabled = !isLoadingChats) {
                         if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Default.Info, contentDescription = "Refresh chats", tint = TelegramBlue)
+                        else Icon(Icons.Default.Refresh, contentDescription = "Refresh chats", tint = TelegramBlue)
                     }
                 }
                 Row(
@@ -995,16 +1000,16 @@ private fun AuthenticatedUserCard(
                         shape = RoundedCornerShape(24.dp)
                     )
                     IconButton(onClick = { photoPicker.launch("image/*") }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.Info, contentDescription = "Choose photo", tint = TelegramBlue)
+                        Icon(Icons.Default.Image, contentDescription = "Choose photo", tint = TelegramBlue)
                     }
                     IconButton(onClick = { videoPicker.launch("video/*") }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.Info, contentDescription = "Choose video", tint = TelegramBlue)
+                        Icon(Icons.Default.VideoLibrary, contentDescription = "Choose video", tint = TelegramBlue)
                     }
                     IconButton(onClick = { audioPicker.launch("audio/*") }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.Info, contentDescription = "Choose audio", tint = TelegramBlue)
+                        Icon(Icons.Default.Audiotrack, contentDescription = "Choose audio", tint = TelegramBlue)
                     }
                     IconButton(onClick = { documentPicker.launch(arrayOf("*/*")) }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.Info, contentDescription = "Choose file", tint = TelegramBlue)
+                        Icon(Icons.Default.AttachFile, contentDescription = "Choose file", tint = TelegramBlue)
                     }
                     IconButton(onClick = onSendMessage, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)

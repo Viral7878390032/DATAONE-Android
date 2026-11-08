@@ -3,6 +3,8 @@ package com.example.feature.telegram.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.BitmapFactory
 import android.widget.MediaController
 import android.widget.VideoView
@@ -69,6 +71,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,6 +91,8 @@ import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import java.io.File
 
 // Premium Dark Theme Palette for DATAONE Telegram Module
 private val BackgroundDark = Color(0xFF0B111A)
@@ -245,6 +250,7 @@ fun TelegramScreen(
                         messageDraft = uiState.messageDraft,
                         onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
                         onSendMessage = { viewModel.sendMessage() },
+                        onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
                         onOpenChat = { viewModel.openChat(it) },
@@ -690,12 +696,30 @@ private fun AuthenticatedUserCard(
     messageDraft: String,
     onMessageDraftChange: (String) -> Unit,
     onSendMessage: () -> Unit,
+    onSendPhoto: (String) -> Unit,
     onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
     onOpenChat: (Long) -> Unit,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val copiedFile = withContext(Dispatchers.IO) {
+                    val destination = File(context.cacheDir, "telegram-photo-${System.currentTimeMillis()}.jpg")
+                    val copied = context.contentResolver.openInputStream(uri)?.use { input ->
+                        destination.outputStream().use { output -> input.copyTo(output) }
+                        destination
+                    }
+                    copied
+                }
+                if (copiedFile != null) onSendPhoto(copiedFile.absolutePath)
+            }
+        }
+    }
     Surface(color = BackgroundDark, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedChatId == null) {
@@ -830,6 +854,9 @@ private fun AuthenticatedUserCard(
                         ),
                         shape = RoundedCornerShape(24.dp)
                     )
+                    IconButton(onClick = { photoPicker.launch("image/*") }, enabled = !isLoadingChats) {
+                        Icon(Icons.Default.Info, contentDescription = "Choose photo", tint = TelegramBlue)
+                    }
                     IconButton(onClick = onSendMessage, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)
                     }

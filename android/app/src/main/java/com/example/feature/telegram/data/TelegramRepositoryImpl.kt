@@ -94,6 +94,10 @@ class TelegramRepositoryImpl(
         clientBridge.sendTextMessage(chatId, text)
     }
 
+    override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.sendPhotoMessage(chatId, path, caption)
+    }
+
     override suspend fun requestMediaDownload(fileId: Int): Result<Unit> = withContext(ioDispatcher) {
         clientBridge.downloadFileOnDemand(fileId, priority = 1)
     }

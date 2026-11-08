@@ -266,6 +266,7 @@ fun TelegramScreen(
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
                         onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
+                        onToggleChatPinned = { chatId, isPinned -> viewModel.toggleChatPinned(chatId, isPinned) },
                         onOpenChat = { viewModel.openChat(it) },
                         onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
@@ -714,6 +715,7 @@ private fun AuthenticatedUserCard(
     onSendDocument: (String) -> Unit,
     onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
+    onToggleChatPinned: (Long, Boolean) -> Unit,
     onOpenChat: (Long) -> Unit,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
@@ -726,7 +728,7 @@ private fun AuthenticatedUserCard(
         (!showUnreadOnly || chat.unreadCount > 0) &&
             (chat.title.contains(chatSearchQuery, ignoreCase = true) ||
                 chat.lastMessage.contains(chatSearchQuery, ignoreCase = true))
-    }
+    }.sortedByDescending { it.isPinned }
     var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
     val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -909,9 +911,21 @@ private fun AuthenticatedUserCard(
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(chat.lastMessage, color = TextSecondary, fontSize = 13.sp, maxLines = 1)
                                 }
-                                if (chat.unreadCount > 0) {
-                                    Box(modifier = Modifier.clip(CircleShape).background(TelegramBlue).padding(horizontal = 7.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
-                                        Text(chat.unreadCount.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Column(horizontalAlignment = Alignment.End) {
+                                    TextButton(
+                                        onClick = { onToggleChatPinned(chat.id, !chat.isPinned) },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                    ) {
+                                        Text(
+                                            if (chat.isPinned) "Unpin" else "Pin",
+                                            color = if (chat.isPinned) TelegramBlue else TextMuted,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                    if (chat.unreadCount > 0) {
+                                        Box(modifier = Modifier.clip(CircleShape).background(TelegramBlue).padding(horizontal = 7.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
+                                            Text(chat.unreadCount.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                 }
                             }

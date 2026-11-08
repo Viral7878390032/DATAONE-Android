@@ -921,6 +921,14 @@ private fun AuthenticatedUserCard(
                                             fontSize = 15.sp,
                                             maxLines = 1
                                         )
+                                        if (chat.isMuted) {
+                                            Icon(
+                                                imageVector = Icons.Default.NotificationsOff,
+                                                contentDescription = "Notifications muted",
+                                                tint = TextMuted,
+                                                modifier = Modifier.size(15.dp).padding(end = 2.dp)
+                                            )
+                                        }
                                         if (chat.lastMessageDate > 0) {
                                             Text(
                                                 formatTelegramChatTime(chat.lastMessageDate),

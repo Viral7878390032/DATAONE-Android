@@ -28,6 +28,9 @@ class TelegramViewModel(
 
     init {
         observeAuthState()
+        // TDLib keeps the authorized session in its local encrypted database.
+        // Re-initialize it automatically so returning users go straight to chats.
+        startConnection()
     }
 
     private fun observeAuthState() {
@@ -382,7 +385,16 @@ class TelegramViewModel(
     fun startConnection() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            repository.startTelegram()
+            try {
+                repository.startTelegram()
+            } catch (error: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error.message ?: "Unable to start Telegram. Please try again."
+                    )
+                }
+            }
         }
     }
 

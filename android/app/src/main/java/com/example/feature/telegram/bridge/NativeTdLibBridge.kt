@@ -752,7 +752,8 @@ class NativeTdLibBridge : TelegramClientBridge {
         val video = (messageContent as? TdApi.MessageVideo)?.video
         val videoFile = video?.video
         val videoPreviewFile = video?.thumbnail?.file
-        val documentFile = (messageContent as? TdApi.MessageDocument)?.document?.document
+        val document = (messageContent as? TdApi.MessageDocument)?.document
+        val documentFile = document?.document
         val localFile = photoFile?.local ?: videoFile?.local ?: documentFile?.local ?: audioFile?.local
         val mediaType = when {
             photoFile != null -> "photo"
@@ -788,7 +789,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             isMediaDownloading = localFile?.isDownloadingActive == true,
             previewFileId = previewFile?.id ?: videoPreviewFile?.id,
             previewFilePath = (previewFile?.local ?: videoPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
-            mediaFileName = documentFile?.fileName
+            mediaFileName = document?.fileName
         )
     }
 

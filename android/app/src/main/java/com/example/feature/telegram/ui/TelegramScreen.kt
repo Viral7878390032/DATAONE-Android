@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.PaddingValues
@@ -1217,8 +1218,12 @@ private fun AuthenticatedUserCard(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Telegram", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text(user.displayName, color = TextSecondary, fontSize = 12.sp, maxLines = 1)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Telegram", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("✓", color = TelegramBlue, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Text("VV - Mobile number", color = TextSecondary, fontSize = 12.sp, maxLines = 1)
                     }
                     IconButton(onClick = onRefreshChats, enabled = !isLoadingChats) {
                         if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -1236,7 +1241,7 @@ private fun AuthenticatedUserCard(
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
                     ) {
-                        Text(if (sortChatsByName) "Sort: Name" else "Sort: Recent", fontSize = 11.sp, color = TelegramBlue)
+                        Text(if (sortChatsByName) "Sort: Name" else "Sort: Recent 11", fontSize = 11.sp, color = TelegramBlue)
                     }
                     Text("${visibleChats.size}", color = TextSecondary, fontSize = 12.sp)
                 }
@@ -1258,52 +1263,35 @@ private fun AuthenticatedUserCard(
                     )
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
                         onClick = { showUnreadOnly = false; showArchivedOnly = false; showMutedOnly = false },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (!showUnreadOnly && !showArchivedOnly && !showMutedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
-                            contentColor = if (!showUnreadOnly && !showArchivedOnly && !showMutedOnly) TelegramBlue else TextSecondary
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = if (!showUnreadOnly && !showArchivedOnly && !showMutedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark),
                         border = androidx.compose.foundation.BorderStroke(1.dp, if (!showUnreadOnly && !showArchivedOnly && !showMutedOnly) TelegramBlue else BorderHairline),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                    ) { Text("All (${chats.size})", fontSize = 12.sp) }
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp)
+                    ) { Text("All (${chats.size})", fontSize = 11.sp, maxLines = 1) }
                     OutlinedButton(
                         onClick = { showUnreadOnly = true; showArchivedOnly = false; showMutedOnly = false },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (showUnreadOnly && !showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
-                            contentColor = if (showUnreadOnly && !showArchivedOnly) TelegramBlue else TextSecondary
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = if (showUnreadOnly && !showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark),
                         border = androidx.compose.foundation.BorderStroke(1.dp, if (showUnreadOnly && !showArchivedOnly) TelegramBlue else BorderHairline),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                    ) { Text("Unread ($unreadChatsCount)", fontSize = 12.sp) }
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp)
+                    ) { Text("Unread ($unreadChatsCount)", fontSize = 11.sp, maxLines = 1) }
                     OutlinedButton(
                         onClick = { showArchivedOnly = !showArchivedOnly; showUnreadOnly = false; showMutedOnly = false },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
-                            contentColor = if (showArchivedOnly) TelegramBlue else TextSecondary
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = if (showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark),
                         border = androidx.compose.foundation.BorderStroke(1.dp, if (showArchivedOnly) TelegramBlue else BorderHairline),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) { Text("Archived (${chats.count { it.isArchived }})", fontSize = 12.sp) }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.Start
-                ) {
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp)
+                    ) { Text("Archived (${chats.count { it.isArchived }})", fontSize = 11.sp, maxLines = 1) }
                     OutlinedButton(
                         onClick = { showMutedOnly = !showMutedOnly; showArchivedOnly = false; showUnreadOnly = false },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (showMutedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
-                            contentColor = if (showMutedOnly) TelegramBlue else TextSecondary
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = if (showMutedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark),
                         border = androidx.compose.foundation.BorderStroke(1.dp, if (showMutedOnly) TelegramBlue else BorderHairline),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Text("Muted (${chats.count { !it.isArchived && it.isMuted }})", fontSize = 12.sp)
-                    }
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp)
+                    ) { Text("Muted (${chats.count { !it.isArchived && it.isMuted }})", fontSize = 11.sp, maxLines = 1) }
                 }
                 if (chats.isEmpty() && isLoadingChats) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
@@ -1315,7 +1303,7 @@ private fun AuthenticatedUserCard(
                         )
                     }
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 12.dp)) {
+                    LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(bottom = 8.dp)) {
                         items(filteredChats, key = { it.id }) { chat ->
                             var showChatActions by remember(chat.id) { mutableStateOf(false) }
                             Row(
@@ -1384,6 +1372,29 @@ private fun AuthenticatedUserCard(
                             }
                             androidx.compose.material3.HorizontalDivider(color = BorderHairline, thickness = 0.5.dp)
                         }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark)
+                        .border(1.dp, BorderHairline).padding(horizontal = 8.dp, vertical = 9.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f).clickable { onCloseChat() }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("💬", fontSize = 19.sp)
+                        Text("Chats", color = TelegramBlue, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Column(Modifier.weight(1f).clickable { showNewChatDialog = true }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("👤", fontSize = 19.sp)
+                        Text("Contacts", color = TextSecondary, fontSize = 10.sp)
+                    }
+                    Column(Modifier.weight(1f).clickable { Toast.makeText(context, "Calls are not available yet.", Toast.LENGTH_SHORT).show() }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("📞", fontSize = 19.sp)
+                        Text("Calls", color = TextSecondary, fontSize = 10.sp)
+                    }
+                    Column(Modifier.weight(1f).clickable { Toast.makeText(context, "Telegram settings are managed by your connected account.", Toast.LENGTH_SHORT).show() }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("⚙️", fontSize = 19.sp)
+                        Text("Settings", color = TextSecondary, fontSize = 10.sp)
                     }
                 }
             } else {

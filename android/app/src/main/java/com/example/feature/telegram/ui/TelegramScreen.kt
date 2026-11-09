@@ -1725,6 +1725,18 @@ private fun AuthenticatedUserCard(
                                     Text("Share", color = TelegramBlue)
                                 }
                                 TextButton(
+                                    onClick = {
+                                        val mediaPath = selected.mediaFilePath
+                                        if (!mediaPath.isNullOrBlank()) {
+                                            saveTelegramMediaToGallery(context, mediaPath, selected.mediaType == "video")
+                                        } else {
+                                            Toast.makeText(context, "Load the original media before saving.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                ) {
+                                    Text("Save to gallery", color = TelegramBlue)
+                                }
+                                TextButton(
                                     enabled = selected.mediaFileId != null,
                                     onClick = {
                                         selected.mediaFileId?.let(onDownloadMedia)

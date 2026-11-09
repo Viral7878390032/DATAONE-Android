@@ -186,6 +186,11 @@ fun TelegramScreen(
                 .then(if (uiState.authState is TelegramAuthState.Authenticated) Modifier else Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Keep the same clean brand header through every login step.
+            if (uiState.authState !is TelegramAuthState.Authenticated) {
+                TelegramBrandHero()
+            }
+
             // Dynamic Authorization Card driven by TDLib AuthState
             when (val state = uiState.authState) {
                 is TelegramAuthState.Uninitialized -> {
@@ -306,14 +311,16 @@ fun TelegramScreen(
 private fun TelegramBrandHero() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 18.dp, bottom = 22.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
+                .size(76.dp)
+                .clip(RoundedCornerShape(26.dp))
                 .background(
-                    Brush.radialGradient(
+                    Brush.linearGradient(
                         listOf(TelegramBlue, TelegramBlueGradiantEnd)
                     )
                 ),
@@ -321,31 +328,26 @@ private fun TelegramBrandHero() {
         ) {
             Icon(
                 imageVector = Icons.Default.Send,
-                contentDescription = "Telegram Logo",
+                contentDescription = "Telegram",
                 tint = Color.White,
                 modifier = Modifier.size(36.dp)
             )
         }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
+        Spacer(modifier = Modifier.height(18.dp))
         Text(
-            text = "Telegram on DATAONE",
-            fontSize = 22.sp,
+            text = "Telegram",
+            fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "Official TDLib C++ Architecture with Android Keystore Protection",
-            fontSize = 13.sp,
+            text = "Your conversations, together in DATAONE.",
+            fontSize = 14.sp,
             color = TextSecondary
         )
     }
 }
-
 @Composable
 private fun MissingNativeLibraryBanner(onConfigureClick: () -> Unit) {
     Surface(
@@ -398,14 +400,14 @@ private fun UninitializedStateCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Connect Telegram Account",
+                text = "Connect your Telegram",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Initialize the encrypted local TDLib database and establish a direct MTProto connection with Telegram servers.",
+                text = "Sign in with your Telegram phone number to see your chats and media in DATAONE.",
                 fontSize = 13.sp,
                 color = TextSecondary,
                 lineHeight = 18.sp
@@ -432,7 +434,7 @@ private fun UninitializedStateCard(
                     )
                 } else {
                     Text(
-                        text = "Initialize Telegram Connection",
+                        text = "Continue with Telegram",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp
                     )
@@ -464,7 +466,7 @@ private fun PhoneNumberInputCard(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Please enter your number in international format with country code (e.g., +14155552671).",
+                text = "Enter your phone number with your country code. We will send you a Telegram login code.",
                 fontSize = 13.sp,
                 color = TextSecondary
             )
@@ -474,7 +476,7 @@ private fun PhoneNumberInputCard(
                 value = phoneNumber,
                 onValueChange = onPhoneChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("+1 234 567 8900", color = TextMuted) },
+                placeholder = { Text("+91 98765 43210", color = TextMuted) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Phone,

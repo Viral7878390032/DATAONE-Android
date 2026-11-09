@@ -92,14 +92,6 @@ class TelegramViewModel(
         }
     }
 
-    fun removeGroupMember(chatId: Long, userId: Long) {
-        viewModelScope.launch {
-            val result = repository.removeGroupMember(chatId, userId)
-            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
-            if (result.isSuccess) loadChatDetails(chatId)
-        }
-    }
-
     fun leaveGroupChat(chatId: Long) {
         viewModelScope.launch {
             val result = repository.leaveGroupChat(chatId)

@@ -127,7 +127,6 @@ class TelegramRepositoryImpl(
     override suspend fun openPrivateChat(userId: Long): Result<Long> = withContext(ioDispatcher) { clientBridge.openPrivateChat(userId) }
     override suspend fun renameGroupChat(chatId: Long, title: String): Result<Unit> = withContext(ioDispatcher) { clientBridge.renameGroupChat(chatId, title) }
     override suspend fun addGroupMembers(chatId: Long, userIds: List<Long>): Result<Unit> = withContext(ioDispatcher) { clientBridge.addGroupMembers(chatId, userIds) }
-    override suspend fun removeGroupMember(chatId: Long, userId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.removeGroupMember(chatId, userId) }
     override suspend fun leaveGroupChat(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.leaveGroupChat(chatId) }
 
     override suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit> = withContext(ioDispatcher) {

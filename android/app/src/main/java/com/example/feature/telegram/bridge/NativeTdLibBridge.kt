@@ -292,13 +292,6 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 
-    override suspend fun removeGroupMember(chatId: Long, userId: Long): Result<Unit> = try {
-        require(chatId != 0L && userId != 0L) { "Select a valid group member." }
-        sendRequest(TdApi.RemoveChatMember(chatId, userId))
-        refreshChats()
-        Result.success(Unit)
-    } catch (error: Throwable) { Result.failure(error) }
-
     override suspend fun leaveGroupChat(chatId: Long): Result<Unit> = try {
         require(chatId != 0L) { "Select a group first." }
         sendRequest(TdApi.LeaveChat(chatId))

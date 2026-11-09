@@ -1306,6 +1306,16 @@ private fun AuthenticatedUserCard(
                                     } else {
                                         Text(chat.title.trim().take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                                     }
+                                    if (chat.isOnline) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomEnd)
+                                                .size(13.dp)
+                                                .clip(CircleShape)
+                                                .background(StatusSuccess)
+                                                .border(2.dp, SurfaceDark, CircleShape)
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(13.dp))
                                 Column(modifier = Modifier.weight(1f)) {

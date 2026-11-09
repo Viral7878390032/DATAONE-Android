@@ -1586,6 +1586,8 @@ private fun AuthenticatedUserCard(
                     }
                 if (selectedSharedMediaMessage != null) {
                     val selected = selectedSharedMediaMessage!!
+                    val galleryItems = filteredMessages.filter { it.mediaType == "photo" || it.mediaType == "video" }
+                    val selectedIndex = galleryItems.indexOfFirst { it.id == selected.id }
                     Dialog(onDismissRequest = { selectedSharedMediaMessage = null }) {
                         Column(
                             modifier = Modifier.fillMaxWidth()
@@ -1599,13 +1601,42 @@ private fun AuthenticatedUserCard(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(if (selected.mediaType == "video") "Video" else "Photo", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "${if (selected.mediaType == "video") "Video" else "Photo"}" +
+                                        if (selectedIndex >= 0) "  ${selectedIndex + 1} of ${galleryItems.size}" else "",
+                                    color = TextPrimary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                                 TextButton(onClick = { selectedSharedMediaMessage = null }) { Text("Close", color = TelegramBlue) }
                             }
                             if (selected.mediaType == "video") {
                                 TelegramVideoContent(message = selected, onDownloadMedia = onDownloadMedia)
                             } else {
                                 TelegramPhotoContent(message = selected, onDownloadMedia = onDownloadMedia)
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextButton(
+                                    enabled = selectedIndex > 0,
+                                    onClick = {
+                                        if (selectedIndex > 0) selectedSharedMediaMessage = galleryItems[selectedIndex - 1]
+                                    }
+                                ) {
+                                    Text("‹ Previous", color = if (selectedIndex > 0) TelegramBlue else TextMuted)
+                                }
+                                TextButton(
+                                    enabled = selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex,
+                                    onClick = {
+                                        if (selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex) {
+                                            selectedSharedMediaMessage = galleryItems[selectedIndex + 1]
+                                        }
+                                    }
+                                ) {
+                                    Text("Next ›", color = if (selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex) TelegramBlue else TextMuted)
+                                }
                             }
                         }
                     }

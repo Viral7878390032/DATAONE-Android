@@ -1,4 +1,5 @@
 # DATAONE Android APK build workflow
+# Keep push and manual builds available for validating app changes.
 name: Build DATAONE Android APK
 
 on:

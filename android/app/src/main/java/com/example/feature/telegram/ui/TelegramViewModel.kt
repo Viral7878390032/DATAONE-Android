@@ -120,6 +120,16 @@ class TelegramViewModel(
         }
     }
 
+    fun loadOlderMessages() {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch {
+            val result = repository.loadOlderMessages(chatId)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+            }
+        }
+    }
+
     fun closeChat() {
         _uiState.update { current ->
             val chatId = current.selectedChatId

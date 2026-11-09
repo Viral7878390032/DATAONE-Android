@@ -43,6 +43,8 @@ class NativeTdLibBridge : TelegramClientBridge {
     private val _messages = MutableStateFlow<List<TelegramMessage>>(emptyList())
     override val messages: StateFlow<List<TelegramMessage>> = _messages.asStateFlow()
     @Volatile private var selectedChatId: Long? = null
+    @Volatile private var isLoadingOlderHistory = false
+    @Volatile private var hasMoreChatHistory = true
 
     private val nativeLoaded = AtomicBoolean(false)
     override val isNativeLibraryAvailable: Boolean
@@ -326,8 +328,10 @@ class NativeTdLibBridge : TelegramClientBridge {
 
     override suspend fun openChat(chatId: Long): Result<Unit> = try {
         selectedChatId = chatId
+        hasMoreChatHistory = true
         val result = sendRequest(TdApi.GetChatHistory(chatId, 0, 0, 50, false)) as TdApi.Messages
         _messages.value = result.messages.reversed().map(::toTelegramMessage)
+        hasMoreChatHistory = result.messages.size >= 50
         if (result.messages.isNotEmpty()) {
             sendRequest(
                 TdApi.ViewMessages(
@@ -341,6 +345,29 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun loadOlderMessages(chatId: Long): Result<Unit> {
+        if (chatId != selectedChatId || isLoadingOlderHistory || !hasMoreChatHistory) return Result.success(Unit)
+        val oldestMessageId = _messages.value.firstOrNull()?.id ?: return Result.success(Unit)
+        isLoadingOlderHistory = true
+        return try {
+            val result = sendRequest(TdApi.GetChatHistory(chatId, oldestMessageId, 0, 50, false)) as TdApi.Messages
+            val olderMessages = result.messages.reversed().map(::toTelegramMessage)
+            if (olderMessages.isEmpty()) {
+                hasMoreChatHistory = false
+            } else {
+                val existingIds = _messages.value.mapTo(mutableSetOf()) { it.id }
+                val uniqueOlder = olderMessages.filterNot { it.id in existingIds }
+                _messages.value = uniqueOlder + _messages.value
+                if (result.messages.size < 50 || uniqueOlder.isEmpty()) hasMoreChatHistory = false
+            }
+            Result.success(Unit)
+        } catch (error: Throwable) {
+            Result.failure(error)
+        } finally {
+            isLoadingOlderHistory = false
+        }
+    }
 
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }

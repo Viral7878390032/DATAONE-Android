@@ -288,6 +288,7 @@ fun TelegramScreen(
                         onToggleChatArchived = { chatId, archived -> viewModel.toggleChatArchived(chatId, archived) },
                         onToggleChatMuted = { chatId, muted -> viewModel.toggleChatMuted(chatId, muted) },
                         onOpenChat = { viewModel.openChat(it) },
+                        onLoadOlderMessages = { viewModel.loadOlderMessages() },
                         onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
                     )
@@ -787,6 +788,7 @@ private fun AuthenticatedUserCard(
     onToggleChatArchived: (Long, Boolean) -> Unit,
     onToggleChatMuted: (Long, Boolean) -> Unit,
     onOpenChat: (Long) -> Unit,
+    onLoadOlderMessages: () -> Unit,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -1100,7 +1102,14 @@ private fun AuthenticatedUserCard(
                         )
                     }
                 } else {
+                    val conversationListState = androidx.compose.foundation.lazy.rememberLazyListState()
+                    LaunchedEffect(selectedChatId, conversationListState.firstVisibleItemIndex) {
+                        if (conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
+                            onLoadOlderMessages()
+                        }
+                    }
                     LazyColumn(
+                        state = conversationListState,
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                     ) {

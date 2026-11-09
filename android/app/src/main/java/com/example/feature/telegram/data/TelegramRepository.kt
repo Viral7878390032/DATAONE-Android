@@ -65,6 +65,7 @@ interface TelegramRepository {
     fun clearChatDrafts()
 
     suspend fun openChat(chatId: Long): Result<Unit>
+    suspend fun loadOlderMessages(chatId: Long): Result<Unit>
     suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit>
 
     suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit>

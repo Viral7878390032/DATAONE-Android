@@ -747,6 +747,7 @@ private fun AuthenticatedUserCard(
     var voiceRecordingFile by remember { mutableStateOf<File?>(null) }
     var voiceRecordingStartedAt by remember { mutableStateOf(0L) }
     var isRecordingVoice by remember { mutableStateOf(false) }
+    var showAttachmentMenu by remember { mutableStateOf(false) }
     val audioPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
             try {
@@ -1635,17 +1636,39 @@ private fun AuthenticatedUserCard(
                         ),
                         shape = RoundedCornerShape(20.dp)
                     )
-                    IconButton(onClick = { photoPicker.launch("image/*") }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.Image, contentDescription = "Choose photo", tint = TelegramBlue)
-                    }
-                    IconButton(onClick = { videoPicker.launch("video/*") }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.VideoLibrary, contentDescription = "Choose video", tint = TelegramBlue)
-                    }
-                    IconButton(onClick = { audioPicker.launch("audio/*") }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.Audiotrack, contentDescription = "Choose audio", tint = TelegramBlue)
-                    }
-                    IconButton(onClick = { documentPicker.launch(arrayOf("*/*")) }, enabled = !isLoadingChats) {
-                        Icon(Icons.Default.AttachFile, contentDescription = "Choose file", tint = TelegramBlue)
+                    Box {
+                        IconButton(
+                            onClick = { showAttachmentMenu = true },
+                            enabled = !isLoadingChats && !isRecordingVoice
+                        ) {
+                            Icon(Icons.Default.AttachFile, contentDescription = "Attach media or file", tint = TelegramBlue)
+                        }
+                        DropdownMenu(
+                            expanded = showAttachmentMenu,
+                            onDismissRequest = { showAttachmentMenu = false },
+                            modifier = Modifier.background(SurfaceCard)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Photo", color = TextPrimary) },
+                                leadingIcon = { Icon(Icons.Default.Image, contentDescription = null, tint = TelegramBlue) },
+                                onClick = { showAttachmentMenu = false; photoPicker.launch("image/*") }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Video", color = TextPrimary) },
+                                leadingIcon = { Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = TelegramBlue) },
+                                onClick = { showAttachmentMenu = false; videoPicker.launch("video/*") }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Audio", color = TextPrimary) },
+                                leadingIcon = { Icon(Icons.Default.Audiotrack, contentDescription = null, tint = TelegramBlue) },
+                                onClick = { showAttachmentMenu = false; audioPicker.launch("audio/*") }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("File", color = TextPrimary) },
+                                leadingIcon = { Icon(Icons.Default.AttachFile, contentDescription = null, tint = TelegramBlue) },
+                                onClick = { showAttachmentMenu = false; documentPicker.launch(arrayOf("*/*")) }
+                            )
+                        }
                     }
                     IconButton(onClick = { onSendMessage(replyTarget?.id); replyTarget = null }, enabled = messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)

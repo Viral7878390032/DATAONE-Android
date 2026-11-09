@@ -407,9 +407,9 @@ class NativeTdLibBridge : TelegramClientBridge {
         val filters: List<TdApi.SearchMessagesFilter> = when (category) {
             "Photos" -> listOf(TdApi.SearchMessagesFilterPhoto())
             "Videos" -> listOf(TdApi.SearchMessagesFilterVideo())
-            "Files" -> listOf(TdApi.SearchMessagesFilterDocument(), TdApi.SearchMessagesFilterAudio(), TdApi.SearchMessagesFilterVoice())
+            "Files" -> listOf(TdApi.SearchMessagesFilterDocument(), TdApi.SearchMessagesFilterAudio())
             "Links" -> listOf(TdApi.SearchMessagesFilterUrl())
-            else -> listOf(TdApi.SearchMessagesFilterPhoto(), TdApi.SearchMessagesFilterVideo(), TdApi.SearchMessagesFilterDocument(), TdApi.SearchMessagesFilterAudio(), TdApi.SearchMessagesFilterVoice(), TdApi.SearchMessagesFilterUrl())
+            else -> listOf(TdApi.SearchMessagesFilterPhoto(), TdApi.SearchMessagesFilterVideo(), TdApi.SearchMessagesFilterDocument(), TdApi.SearchMessagesFilterAudio(), TdApi.SearchMessagesFilterUrl())
         }
         val found = filters.flatMap { filter ->
             val request = TdApi.SearchChatMessages()

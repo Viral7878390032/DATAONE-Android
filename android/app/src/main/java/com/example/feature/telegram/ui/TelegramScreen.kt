@@ -2021,8 +2021,18 @@ private fun SharedMediaGalleryGrid(
                     key1 = thumbnailPath
                 ) {
                     value = withContext(Dispatchers.IO) {
-                        thumbnailPath?.takeIf { it.isNotBlank() }
-                            ?.let { runCatching { BitmapFactory.decodeFile(it)?.asImageBitmap() }.getOrNull() }
+                        thumbnailPath?.takeIf { it.isNotBlank() }?.let { path ->
+                            runCatching {
+                                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                                BitmapFactory.decodeFile(path, bounds)
+                                var sampleSize = 1
+                                while (bounds.outWidth / sampleSize > 480 || bounds.outHeight / sampleSize > 480) {
+                                    sampleSize *= 2
+                                }
+                                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+                                BitmapFactory.decodeFile(path, decodeOptions)?.asImageBitmap()
+                            }.getOrNull()
+                        }
                     }
                 }
                 val videoDurationLabel by produceState<String?>(null, thumbnailPath, message.mediaType) {

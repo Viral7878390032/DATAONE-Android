@@ -387,6 +387,20 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 
+    override suspend fun deleteMessage(chatId: Long, messageId: Long): Result<Unit> = try {
+        require(chatId != 0L && messageId != 0L) { "Select a valid message to delete." }
+        sendRequest(TdApi.DeleteMessages(chatId, longArrayOf(messageId), true))
+        if (selectedChatId == chatId) openChat(chatId)
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun addMessageReaction(chatId: Long, messageId: Long, emoji: String): Result<Unit> = try {
+        require(chatId != 0L && messageId != 0L && emoji.isNotBlank()) { "Select a valid message and reaction." }
+        sendRequest(TdApi.AddMessageReaction(chatId, messageId, TdApi.ReactionTypeEmoji(emoji), false, true))
+        if (selectedChatId == chatId) openChat(chatId)
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The selected photo could not be opened." }
@@ -460,9 +474,13 @@ class NativeTdLibBridge : TelegramClientBridge {
             is TdApi.MessageVoiceNote -> content.voiceNote.voice
             else -> null
         }
-        val localFile = photoFile?.local ?: audioFile?.local
+        val videoFile = (messageContent as? TdApi.MessageVideo)?.video?.video
+        val documentFile = (messageContent as? TdApi.MessageDocument)?.document?.document
+        val localFile = photoFile?.local ?: videoFile?.local ?: documentFile?.local ?: audioFile?.local
         val mediaType = when {
             photoFile != null -> "photo"
+            videoFile != null -> "video"
+            documentFile != null -> "document"
             messageContent is TdApi.MessageAudio -> "audio"
             messageContent is TdApi.MessageVoiceNote -> "voice"
             else -> null
@@ -486,7 +504,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             date = message.date,
             isOutgoing = message.isOutgoing,
             mediaType = mediaType,
-            mediaFileId = photoFile?.id ?: audioFile?.id,
+            mediaFileId = photoFile?.id ?: videoFile?.id ?: documentFile?.id ?: audioFile?.id,
             mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true

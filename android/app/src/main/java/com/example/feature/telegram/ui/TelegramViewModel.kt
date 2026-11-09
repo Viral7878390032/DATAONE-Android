@@ -229,6 +229,14 @@ class TelegramViewModel(
         }
     }
 
+    fun deleteMessage(messageId: Long) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch { val result = repository.deleteMessage(chatId, messageId); _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) } }
+    }
+    fun addMessageReaction(messageId: Long, emoji: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch { val result = repository.addMessageReaction(chatId, messageId, emoji); _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) } }
+    }
     fun sendMessage(replyToMessageId: Long? = null) {
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()

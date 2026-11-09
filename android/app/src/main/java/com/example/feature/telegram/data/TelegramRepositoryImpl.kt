@@ -149,6 +149,8 @@ class TelegramRepositoryImpl(
     override suspend fun editTextMessage(chatId: Long, messageId: Long, newText: String): Result<Unit> = withContext(ioDispatcher) {
         clientBridge.editTextMessage(chatId, messageId, newText)
     }
+    override suspend fun deleteMessage(chatId: Long, messageId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.deleteMessage(chatId, messageId) }
+    override suspend fun addMessageReaction(chatId: Long, messageId: Long, emoji: String): Result<Unit> = withContext(ioDispatcher) { clientBridge.addMessageReaction(chatId, messageId, emoji) }
 
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = withContext(ioDispatcher) {
         clientBridge.sendPhotoMessage(chatId, path, caption)

@@ -280,6 +280,8 @@ fun TelegramScreen(
                         onSendMessage = { replyToId -> viewModel.sendMessage(replyToId) },
                         onForwardMessage = { fromChat, message, toChat -> viewModel.forwardMessage(fromChat, message, toChat) },
                         onEditMessage = { messageId, text -> viewModel.editTextMessage(messageId, text) },
+                        onDeleteMessage = { viewModel.deleteMessage(it) },
+                        onReactMessage = { id, emoji -> viewModel.addMessageReaction(id, emoji) },
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
@@ -782,6 +784,8 @@ private fun AuthenticatedUserCard(
     onSendMessage: (Long?) -> Unit,
     onForwardMessage: (Long, Long, Long) -> Unit,
     onEditMessage: (Long, String) -> Unit,
+    onDeleteMessage: (Long) -> Unit,
+    onReactMessage: (Long, String) -> Unit,
     onSendPhoto: (String) -> Unit,
     onSendVideo: (String) -> Unit,
     onSendDocument: (String) -> Unit,
@@ -821,6 +825,8 @@ private fun AuthenticatedUserCard(
     var forwardTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editDraft by remember(selectedChatId) { mutableStateOf("") }
+    var deleteTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    if (deleteTarget != null) AlertDialog(onDismissRequest = { deleteTarget = null }, title = { Text("Delete message?") }, text = { Text("Delete this message for everyone where Telegram permits?") }, confirmButton = { TextButton(onClick = { deleteTarget?.let { onDeleteMessage(it.id) }; deleteTarget = null }) { Text("Delete", color = Color(0xFFFF7777)) } }, dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } })
     if (editTarget != null) {
         AlertDialog(
             onDismissRequest = { editTarget = null },
@@ -1196,6 +1202,9 @@ private fun AuthenticatedUserCard(
                                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                                                 ) { Text("Edit", color = TelegramBlue, fontSize = 11.sp) }
                                             }
+                                            TextButton(onClick = { onReactMessage(message.id, "👍") }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) { Text("👍", fontSize = 12.sp) }
+                                            TextButton(onClick = { onReactMessage(message.id, "❤️") }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) { Text("❤️", fontSize = 12.sp) }
+                                            TextButton(onClick = { onReactMessage(message.id, "😂") }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) { Text("😂", fontSize = 12.sp) }
                                             TextButton(
                                                 onClick = { replyTarget = message },
                                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
@@ -1204,6 +1213,7 @@ private fun AuthenticatedUserCard(
                                                 onClick = { forwardTarget = message },
                                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                                             ) { Text("Forward", color = TelegramBlue, fontSize = 11.sp) }
+                                            TextButton(onClick = { deleteTarget = message }, contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp)) { Text("Delete", color = Color(0xFFFF7777), fontSize = 11.sp) }
                                         }
                                         if (message.text.isNotBlank()) {
                                             Row(

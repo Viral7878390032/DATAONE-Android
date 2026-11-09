@@ -1739,6 +1739,9 @@ private fun TelegramAudioContent(
                     fontSize = 12.sp,
                     modifier = Modifier.padding(start = 10.dp).weight(1f)
                 )
+                TextButton(onClick = { shareTelegramMedia(context, message.mediaFilePath!!, message.mediaType ?: "audio") }) {
+                    Text("Share", color = TelegramBlue)
+                }
                 TextButton(onClick = { saveTelegramAudioToDownloads(context, message.mediaFilePath!!) }) {
                     Text("Save", color = TelegramBlue)
                 }
@@ -1793,6 +1796,62 @@ private fun saveTelegramAudioToDownloads(context: android.content.Context, path:
         Toast.makeText(context, "Audio saved to Downloads/DATAONE", Toast.LENGTH_SHORT).show()
     } catch (error: Exception) {
         Toast.makeText(context, error.message ?: "Unable to save audio.", Toast.LENGTH_LONG).show()
+    }
+}
+
+private fun shareTelegramMedia(context: android.content.Context, path: String, mediaType: String) {
+    try {
+        val source = java.io.File(path)
+        if (!source.exists() || !source.isFile) {
+            Toast.makeText(context, "Media file is not available yet.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val isVideo = mediaType == "video"
+        val isAudio = mediaType == "audio" || mediaType == "voice"
+        val extension = source.extension.lowercase()
+        val mimeType = when {
+            isVideo -> "video/*"
+            isAudio -> when (extension) {
+                "mp3" -> "audio/mpeg"
+                "m4a" -> "audio/mp4"
+                "ogg", "oga" -> "audio/ogg"
+                "wav" -> "audio/wav"
+                "flac" -> "audio/flac"
+                else -> "audio/*"
+            }
+            else -> "image/*"
+        }
+        val collection = when {
+            isVideo -> MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            isAudio -> MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            else -> MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        }
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, source.name)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, if (isVideo) "Movies/DATAONE" else if (isAudio) "Download/DATAONE" else "Pictures/DATAONE")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        }
+        val resolver = context.contentResolver
+        val uri = resolver.insert(collection, values) ?: throw IllegalStateException("Could not prepare media for sharing")
+        resolver.openOutputStream(uri)?.use { output ->
+            source.inputStream().use { input -> input.copyTo(output) }
+        } ?: throw IllegalStateException("Could not read media for sharing")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val ready = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+            resolver.update(uri, ready, null, null)
+        }
+        val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            clipData = android.content.ClipData.newUri(resolver, source.name, uri)
+        }
+        context.startActivity(android.content.Intent.createChooser(sendIntent, "Share media"))
+    } catch (error: Exception) {
+        Toast.makeText(context, error.message ?: "Unable to share media.", Toast.LENGTH_LONG).show()
     }
 }
 
@@ -1851,7 +1910,10 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
             )
             Row(modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).background(Color(0xE6101820), RoundedCornerShape(20.dp)).border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(20.dp))) {
                 if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load full image", color = Color.White, fontSize = 11.sp) }
-                else TextButton(onClick = { saveTelegramMediaToGallery(context, message.mediaFilePath, false) }) { Text("Save", color = Color.White, fontSize = 11.sp) }
+                else {
+                    TextButton(onClick = { shareTelegramMedia(context, message.mediaFilePath, "photo") }) { Text("Share", color = Color.White, fontSize = 11.sp) }
+                    TextButton(onClick = { saveTelegramMediaToGallery(context, message.mediaFilePath, false) }) { Text("Save", color = Color.White, fontSize = 11.sp) }
+                }
             }
         }
     } else {
@@ -1880,7 +1942,10 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = { showFullPreview = false }) { Text("Close") }
                 if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load original") }
-                else TextButton(onClick = { saveTelegramMediaToGallery(context, message.mediaFilePath, false) }) { Text("Save photo") }
+                else {
+                    TextButton(onClick = { shareTelegramMedia(context, message.mediaFilePath, "photo") }) { Text("Share photo") }
+                    TextButton(onClick = { saveTelegramMediaToGallery(context, message.mediaFilePath, false) }) { Text("Save photo") }
+                }
             }
         }
     }
@@ -1993,6 +2058,9 @@ private fun TelegramVideoContent(
                         TextButton(onClick = { showFullscreenPlayer = true }) {
                             Text("Full screen")
                         }
+                        TextButton(onClick = { shareTelegramMedia(context, videoPath, "video") }) {
+                            Text("Share")
+                        }
                         TextButton(onClick = {
                             saveTelegramMediaToGallery(context, videoPath, true)
                         }) {
@@ -2045,6 +2113,7 @@ private fun TelegramVideoContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    TextButton(onClick = { shareTelegramMedia(context, videoPath, "video") }) { Text("Share") }
                     TextButton(onClick = {
                         saveTelegramMediaToGallery(context, videoPath, true)
                     }) { Text("Save video") }

@@ -447,12 +447,12 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun sendAudioMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The selected audio could not be opened." }
+        val inputAudio = TdApi.InputAudio()
+        inputAudio.audio = TdApi.InputFileLocal(path)
+        inputAudio.title = File(path).nameWithoutExtension.take(64)
+        inputAudio.performer = ""
         val content = TdApi.InputMessageAudio(
-            TdApi.InputFileLocal(path),
-            null,
-            0,
-            File(path).nameWithoutExtension.take(64),
-            "",
+            inputAudio,
             TdApi.FormattedText(caption, emptyArray())
         )
         sendRequest(TdApi.SendMessage(chatId, null, null, null, null, content))

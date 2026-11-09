@@ -262,6 +262,11 @@ class NativeTdLibBridge : TelegramClientBridge {
                         semaphore.withPermit {
                             try {
                                 val chat = sendRequest(TdApi.GetChat(id)) as TdApi.Chat
+                                val photoFile = chat.photo?.small
+                                val photoLocal = photoFile?.local
+                                val completedPhotoPath = photoLocal?.let { local ->
+                                    if (local.isDownloadingCompleted && local.path.isNotBlank()) local.path else null
+                                }
                                 TelegramChat(
                                     id = chat.id,
                                     title = chat.title,
@@ -273,11 +278,10 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     isArchived = chat.id in archivedIds,
                                     isMuted = chat.notificationSettings.muteFor > 0,
                                     unreadMentionCount = chat.unreadMentionCount,
-                                    photoFileId = chat.photo?.small?.id ?: 0,
-                                    photoFilePath = chat.photo?.small?.let { photo -> photo.local.path.takeIf { photo.local.isDownloadingCompleted && it.isNotBlank() } }
-                                ).also { chatModel ->
-                                    val photoFile = chat.photo?.small
-                                    if (photoFile != null && !photoFile.local.isDownloadingCompleted) {
+                                    photoFileId = photoFile?.id ?: 0,
+                                    photoFilePath = completedPhotoPath
+                                ).also {
+                                    if (photoFile != null && photoLocal?.isDownloadingCompleted != true) {
                                         runCatching { sendRequest(TdApi.DownloadFile(photoFile.id, 16, 0, 0, false)) }
                                     }
                                 }

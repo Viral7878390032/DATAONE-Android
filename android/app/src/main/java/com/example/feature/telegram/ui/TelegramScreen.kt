@@ -111,7 +111,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramUser
-import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch

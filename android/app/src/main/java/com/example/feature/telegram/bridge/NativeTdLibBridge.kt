@@ -247,8 +247,9 @@ class NativeTdLibBridge : TelegramClientBridge {
 
     override suspend fun searchContacts(query: String): Result<List<TelegramUser>> = try {
         val result = sendRequest(TdApi.SearchContacts(query.trim(), 100)) as TdApi.Users
-        val contacts = result.userIds.mapNotNull { userId ->
-            runCatching {
+        val contacts = mutableListOf<TelegramUser>()
+        for (userId in result.userIds) {
+            val contact = runCatching {
                 val user = sendRequest(TdApi.GetUser(userId)) as TdApi.User
                 TelegramUser(
                     id = user.id,
@@ -256,10 +257,10 @@ class NativeTdLibBridge : TelegramClientBridge {
                     lastName = user.lastName,
                     username = user.usernames?.activeUsernames?.firstOrNull(),
                     phoneNumber = user.phoneNumber,
-                    isPremium = user.isPremium,
-                    isVerified = user.isVerified
+                    isPremium = user.isPremium
                 )
             }.getOrNull()
+            if (contact != null) contacts.add(contact)
         }
         Result.success(contacts)
     } catch (error: Throwable) { Result.failure(error) }

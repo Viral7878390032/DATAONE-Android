@@ -20,6 +20,8 @@ import android.provider.MediaStore
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -106,6 +108,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -1765,9 +1768,22 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
             else Button(onClick = { (message.previewFileId ?: message.mediaFileId)?.let(onDownloadMedia) }, enabled = message.previewFileId != null || message.mediaFileId != null, modifier = Modifier.padding(top = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)) { Text("Preview image") }
         }
     }
-    if (showFullPreview && photoBitmap != null) Dialog(onDismissRequest = { showFullPreview = false }) {
+    var photoZoom by remember(message.id) { mutableStateOf(1f) }
+    val photoZoomState = rememberTransformableState { zoomChange, _, _ ->
+        photoZoom = (photoZoom * zoomChange).coerceIn(1f, 5f)
+    }
+    if (showFullPreview && photoBitmap != null) Dialog(onDismissRequest = { showFullPreview = false; photoZoom = 1f }) {
         Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF101820), RoundedCornerShape(16.dp)).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(bitmap = photoBitmap!!, contentDescription = "Full Telegram photo preview", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).clickable { showFullPreview = false })
+            Image(
+                bitmap = photoBitmap!!,
+                contentDescription = "Full Telegram photo preview",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp)
+                    .graphicsLayer { scaleX = photoZoom; scaleY = photoZoom }
+                    .transformable(state = photoZoomState)
+            )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = { showFullPreview = false }) { Text("Close") }
                 if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load original") }

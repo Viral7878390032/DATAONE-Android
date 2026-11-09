@@ -163,33 +163,6 @@ fun TelegramScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = BackgroundDark,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Telegram",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SurfaceDark,
-                    titleContentColor = TextPrimary
-                )
-            )
-        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -1209,6 +1182,30 @@ private fun AuthenticatedUserCard(
     Surface(color = BackgroundDark, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedChatId == null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier.size(44.dp).clip(CircleShape).background(TelegramBlue),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(user.firstName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(user.displayName.ifBlank { user.firstName }, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("✓", color = TelegramBlue, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Text("VV - Mobile number", color = TextSecondary, fontSize = 12.sp, maxLines = 1)
+                    }
+                    IconButton(onClick = onRefreshChats, enabled = !isLoadingChats) {
+                        if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Default.Refresh, contentDescription = "Refresh chats", tint = TelegramBlue)
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically

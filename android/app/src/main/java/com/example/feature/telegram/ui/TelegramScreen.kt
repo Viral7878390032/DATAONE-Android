@@ -111,6 +111,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramUser
+import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
@@ -278,6 +279,10 @@ fun TelegramScreen(
                         user = state.user,
                         isLoading = uiState.isLoading,
                         chats = uiState.chats,
+                        contacts = uiState.contacts,
+                        isLoadingContacts = uiState.isLoadingContacts,
+                        onSearchContacts = { viewModel.searchContacts(it) },
+                        onOpenPrivateChat = { viewModel.openPrivateChat(it) },
                         messages = uiState.messages,
                         selectedChatId = uiState.selectedChatId,
                         isLoadingChats = uiState.isLoadingChats,
@@ -790,6 +795,10 @@ private fun AuthenticatedUserCard(
     user: TelegramUser,
     isLoading: Boolean,
     chats: List<com.example.feature.telegram.model.TelegramChat>,
+    contacts: List<TelegramUser>,
+    isLoadingContacts: Boolean,
+    onSearchContacts: (String) -> Unit,
+    onOpenPrivateChat: (Long) -> Unit,
     messages: List<com.example.feature.telegram.model.TelegramMessage>,
     selectedChatId: Long?,
     isLoadingChats: Boolean,
@@ -858,6 +867,12 @@ private fun AuthenticatedUserCard(
         } else Toast.makeText(context, "Microphone permission is required to record a voice message.", Toast.LENGTH_LONG).show()
     }
     var chatSearchQuery by remember { mutableStateOf("") }
+    var showNewChatDialog by remember { mutableStateOf(false) }
+    var contactSearchQuery by remember { mutableStateOf("") }
+    LaunchedEffect(showNewChatDialog) { if (showNewChatDialog) onSearchContacts("") }
+    LaunchedEffect(contactSearchQuery, showNewChatDialog) {
+        if (showNewChatDialog) { kotlinx.coroutines.delay(300); onSearchContacts(contactSearchQuery) }
+    }
     var showUnreadOnly by remember { mutableStateOf(false) }
     var showArchivedOnly by remember { mutableStateOf(false) }
     var showMutedOnly by remember { mutableStateOf(false) }
@@ -909,6 +924,31 @@ private fun AuthenticatedUserCard(
     var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editDraft by remember(selectedChatId) { mutableStateOf("") }
     var deleteTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    if (showNewChatDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewChatDialog = false; contactSearchQuery = "" },
+            containerColor = SurfaceCard,
+            title = { Text("New message", color = TextPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(value = contactSearchQuery, onValueChange = { contactSearchQuery = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("Search your Telegram contacts") })
+                    if (isLoadingContacts) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
+                    else if (contacts.isEmpty()) Text("No contacts found. Add contacts in Telegram first, then search here.", color = TextSecondary)
+                    else Column(Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState())) {
+                        contacts.forEach { contact ->
+                            TextButton(onClick = { onOpenPrivateChat(contact.id); showNewChatDialog = false; contactSearchQuery = "" }, modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.fillMaxWidth()) {
+                                    Text(contact.displayName, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                                    Text(contact.handle.ifBlank { "Telegram contact" }, color = TextSecondary, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showNewChatDialog = false }) { Text("Close", color = TelegramBlue) } }
+        )
+    }
     if (showChatDetails) {
         val details = chatDetails
         AlertDialog(
@@ -1080,6 +1120,7 @@ private fun AuthenticatedUserCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(if (showArchivedOnly) "Archived chats" else "All chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    OutlinedButton(onClick = { showNewChatDialog = true }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)) { Text("+ New chat", color = TelegramBlue, fontSize = 12.sp) }
                     OutlinedButton(
                         onClick = { sortChatsByName = !sortChatsByName },
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),

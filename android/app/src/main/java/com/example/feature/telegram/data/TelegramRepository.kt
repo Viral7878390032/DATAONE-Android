@@ -4,6 +4,7 @@ import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
 import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
+import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -57,6 +58,8 @@ interface TelegramRepository {
      * Downloads specific media file on demand (strictly no auto-download).
      */
     suspend fun refreshChats(): Result<Unit>
+    suspend fun searchContacts(query: String): Result<List<TelegramUser>>
+    suspend fun openPrivateChat(userId: Long): Result<Long>
     suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit>
     suspend fun toggleChatMarkedUnread(chatId: Long, isMarkedAsUnread: Boolean): Result<Unit>
     suspend fun toggleChatArchived(chatId: Long, isArchived: Boolean): Result<Unit>

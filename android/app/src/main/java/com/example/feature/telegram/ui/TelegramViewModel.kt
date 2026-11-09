@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.feature.telegram.data.TelegramRepository
 import com.example.feature.telegram.model.TelegramAuthState
+import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,23 @@ class TelegramViewModel(
         }
         viewModelScope.launch {
             repository.messages.collect { messages -> _uiState.update { it.copy(messages = messages) } }
+        }
+    }
+
+    fun searchContacts(query: String = "") {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingContacts = true, errorMessage = null) }
+            val result = repository.searchContacts(query)
+            _uiState.update { it.copy(contacts = result.getOrDefault(emptyList()), isLoadingContacts = false, errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
+    fun openPrivateChat(userId: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            val result = repository.openPrivateChat(userId)
+            result.onSuccess { chatId -> openChat(chatId) }
+                .onFailure { error -> _uiState.update { it.copy(isLoadingChats = false, errorMessage = error.message ?: "Unable to open contact chat.") } }
         }
     }
 

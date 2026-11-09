@@ -4,6 +4,7 @@ import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
 import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
+import com.example.feature.telegram.model.TelegramUser
 
 /**
  * Immutable UI state for TelegramScreen.
@@ -23,6 +24,8 @@ data class TelegramUiState(
     val apiIdInput: String = "",
     val apiHashInput: String = "",
     val chats: List<TelegramChat> = emptyList(),
+    val contacts: List<TelegramUser> = emptyList(),
+    val isLoadingContacts: Boolean = false,
     val messages: List<TelegramMessage> = emptyList(),
     val selectedChatId: Long? = null,
     val chatDetails: TelegramChatDetails? = null,

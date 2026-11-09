@@ -9,6 +9,7 @@ import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
 import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
+import com.example.feature.telegram.model.TelegramUser
 import com.example.feature.telegram.model.TelegramMediaConfig
 import com.example.feature.telegram.security.TelegramSessionSecurity
 import kotlinx.coroutines.CoroutineDispatcher
@@ -119,6 +120,9 @@ class TelegramRepositoryImpl(
     }
 
     override suspend fun refreshChats(): Result<Unit> = withContext(ioDispatcher) { clientBridge.refreshChats() }
+
+    override suspend fun searchContacts(query: String): Result<List<TelegramUser>> = withContext(ioDispatcher) { clientBridge.searchContacts(query) }
+    override suspend fun openPrivateChat(userId: Long): Result<Long> = withContext(ioDispatcher) { clientBridge.openPrivateChat(userId) }
 
     override suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit> = withContext(ioDispatcher) {
         clientBridge.toggleChatPinned(chatId, isPinned)

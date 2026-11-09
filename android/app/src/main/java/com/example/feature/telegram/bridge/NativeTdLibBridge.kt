@@ -245,6 +245,32 @@ class NativeTdLibBridge : TelegramClientBridge {
         return runRequest { TdApi.RegisterUser(firstName.trim(), lastName.trim(), false) }
     }
 
+    override suspend fun searchContacts(query: String): Result<List<TelegramUser>> = try {
+        val result = sendRequest(TdApi.SearchContacts(query.trim(), 100)) as TdApi.Users
+        val contacts = result.userIds.mapNotNull { userId ->
+            runCatching {
+                val user = sendRequest(TdApi.GetUser(userId)) as TdApi.User
+                TelegramUser(
+                    id = user.id,
+                    firstName = user.firstName,
+                    lastName = user.lastName,
+                    username = user.usernames?.activeUsernames?.firstOrNull(),
+                    phoneNumber = user.phoneNumber,
+                    isPremium = user.isPremium,
+                    isVerified = user.isVerified
+                )
+            }.getOrNull()
+        }
+        Result.success(contacts)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun openPrivateChat(userId: Long): Result<Long> = try {
+        require(userId != 0L) { "Choose a valid Telegram contact." }
+        val chat = sendRequest(TdApi.CreatePrivateChat(userId, false)) as TdApi.Chat
+        refreshChats()
+        Result.success(chat.id)
+    } catch (error: Throwable) { Result.failure(error) }
+
     override suspend fun refreshChats(): Result<Unit> = try {
         // Load every available page from both TDLib chat lists before reading IDs.
         // GetChats only returns chats already loaded into TDLib's local chat list;

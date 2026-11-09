@@ -10,6 +10,10 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.widget.Toast
 import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.OpenableColumns
 import android.widget.MediaController
 import android.widget.VideoView
@@ -51,6 +55,8 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Send
@@ -286,6 +292,7 @@ fun TelegramScreen(
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
                         onSendAudio = { path -> viewModel.sendAudioMessage(path) },
+                        onSendVoice = { path, duration -> viewModel.sendVoiceMessage(path, duration) },
                         onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
                         onToggleChatPinned = { chatId, isPinned -> viewModel.toggleChatPinned(chatId, isPinned) },
@@ -791,6 +798,7 @@ private fun AuthenticatedUserCard(
     onSendVideo: (String) -> Unit,
     onSendDocument: (String) -> Unit,
     onSendAudio: (String) -> Unit,
+    onSendVoice: (String, Int) -> Unit,
     onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
     onToggleChatPinned: (Long, Boolean) -> Unit,
@@ -804,6 +812,39 @@ private fun AuthenticatedUserCard(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    var voiceRecorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var voiceRecordingFile by remember { mutableStateOf<File?>(null) }
+    var voiceRecordingStartedAt by remember { mutableStateOf(0L) }
+    var isRecordingVoice by remember { mutableStateOf(false) }
+    val audioPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            try {
+                if (Build.VERSION.SDK_INT < 29) {
+                    Toast.makeText(context, "Voice-note recording requires Android 10 or newer.", Toast.LENGTH_LONG).show()
+                } else {
+                    val file = File(context.cacheDir, "telegram-voice-${System.currentTimeMillis()}.ogg")
+                    val recorder = MediaRecorder()
+                    recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+                    recorder.setOutputFormat(MediaRecorder.OutputFormat.OGG)
+                    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS)
+                    recorder.setAudioSamplingRate(48000)
+                    recorder.setAudioEncodingBitRate(64000)
+                    recorder.setOutputFile(file.absolutePath)
+                    recorder.prepare()
+                    recorder.start()
+                    voiceRecordingFile = file
+                    voiceRecorder = recorder
+                    voiceRecordingStartedAt = System.currentTimeMillis()
+                    isRecordingVoice = true
+                }
+            } catch (error: Exception) {
+                voiceRecorder?.release()
+                voiceRecorder = null
+                isRecordingVoice = false
+                Toast.makeText(context, error.message ?: "Unable to start recording.", Toast.LENGTH_LONG).show()
+            }
+        } else Toast.makeText(context, "Microphone permission is required to record a voice message.", Toast.LENGTH_LONG).show()
+    }
     var chatSearchQuery by remember { mutableStateOf("") }
     var showUnreadOnly by remember { mutableStateOf(false) }
     var showArchivedOnly by remember { mutableStateOf(false) }
@@ -1282,6 +1323,36 @@ private fun AuthenticatedUserCard(
                     modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(
+                        onClick = {
+                            if (isRecordingVoice) {
+                                try {
+                                    voiceRecorder?.stop()
+                                    voiceRecorder?.release()
+                                    voiceRecorder = null
+                                    isRecordingVoice = false
+                                    val file = voiceRecordingFile
+                                    val seconds = ((System.currentTimeMillis() - voiceRecordingStartedAt) / 1000L).toInt().coerceAtLeast(1)
+                                    if (file != null && file.exists() && file.length() > 0L) onSendVoice(file.absolutePath, seconds)
+                                    else Toast.makeText(context, "No voice audio was captured.", Toast.LENGTH_SHORT).show()
+                                } catch (error: Exception) {
+                                    Toast.makeText(context, error.message ?: "Recording could not be saved.", Toast.LENGTH_LONG).show()
+                                    voiceRecorder?.release()
+                                    voiceRecorder = null
+                                    isRecordingVoice = false
+                                }
+                            } else {
+                                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            }
+                        },
+                        enabled = !isLoadingChats
+                    ) {
+                        Icon(
+                            imageVector = if (isRecordingVoice) Icons.Default.Stop else Icons.Default.Mic,
+                            contentDescription = if (isRecordingVoice) "Stop and send voice message" else "Record voice message",
+                            tint = if (isRecordingVoice) Color(0xFFFF7777) else TelegramBlue
+                        )
+                    }
                     OutlinedTextField(
                         value = messageDraft,
                         onValueChange = onMessageDraftChange,
@@ -1310,7 +1381,7 @@ private fun AuthenticatedUserCard(
                     IconButton(onClick = { documentPicker.launch(arrayOf("*/*")) }, enabled = !isLoadingChats) {
                         Icon(Icons.Default.AttachFile, contentDescription = "Choose file", tint = TelegramBlue)
                     }
-                    IconButton(onClick = { onSendMessage(replyTarget?.id); replyTarget = null }, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
+                    IconButton(onClick = { onSendMessage(replyTarget?.id); replyTarget = null }, enabled = messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)
                     }
                 }

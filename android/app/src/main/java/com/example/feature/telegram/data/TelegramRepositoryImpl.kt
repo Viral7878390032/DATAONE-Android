@@ -168,6 +168,10 @@ class TelegramRepositoryImpl(
         clientBridge.sendAudioMessage(chatId, path, caption)
     }
 
+    override suspend fun sendVoiceMessage(chatId: Long, path: String, durationSeconds: Int): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.sendVoiceMessage(chatId, path, durationSeconds)
+    }
+
     override suspend fun requestMediaDownload(fileId: Int): Result<Unit> = withContext(ioDispatcher) {
         clientBridge.downloadFileOnDemand(fileId, priority = 1)
     }

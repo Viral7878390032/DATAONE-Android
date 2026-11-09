@@ -214,6 +214,16 @@ class TelegramViewModel(
         }
     }
 
+    fun sendVoiceMessage(path: String, durationSeconds: Int) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        if (path.isBlank()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            val result = repository.sendVoiceMessage(chatId, path, durationSeconds)
+            _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
     fun sendDocumentMessage(path: String) {
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return

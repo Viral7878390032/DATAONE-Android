@@ -92,6 +92,7 @@ interface TelegramClientBridge {
     suspend fun sendVideoMessage(chatId: Long, path: String, caption: String): Result<Unit>
     suspend fun sendDocumentMessage(chatId: Long, path: String, caption: String): Result<Unit>
     suspend fun sendAudioMessage(chatId: Long, path: String, caption: String): Result<Unit>
+    suspend fun sendVoiceMessage(chatId: Long, path: String, durationSeconds: Int): Result<Unit>
 
     suspend fun downloadFileOnDemand(fileId: Int, priority: Int = 1): Result<Unit>
 

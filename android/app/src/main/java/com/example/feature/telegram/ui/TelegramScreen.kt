@@ -1171,17 +1171,28 @@ private fun AuthenticatedUserCard(
                                 modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                val chatAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, chat.photoFilePath) {
+                                    value = if (chat.photoFilePath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
+                                        runCatching { BitmapFactory.decodeFile(chat.photoFilePath) }.getOrNull()
+                                    }
+                                }
                                 Box(
                                     modifier = Modifier.size(52.dp).clip(CircleShape)
                                         .background(Brush.linearGradient(listOf(TelegramBlue.copy(alpha = 0.9f), AccentCyan.copy(alpha = 0.65f)))),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(chat.title.trim().take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                    if (chatAvatar != null) {
+                                        Image(bitmap = chatAvatar!!.asImageBitmap(), contentDescription = "${chat.title} profile photo",
+                                            modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
+                                    } else {
+                                        Text(chat.title.trim().take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(13.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                        Text(chat.title, modifier = Modifier.weight(1f), color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1)
+                                        if (chat.isPinned) Text("📌", fontSize = 11.sp, modifier = Modifier.padding(end = 5.dp))
+                                        Text(chat.title, modifier = Modifier.weight(1f), color = if (chat.unreadCount > 0 || chat.isMarkedAsUnread) Color.White else TextPrimary, fontWeight = if (chat.unreadCount > 0 || chat.isMarkedAsUnread) FontWeight.Bold else FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1)
                                         if (chat.isMuted) Text("🔕", fontSize = 12.sp, modifier = Modifier.padding(end = 5.dp))
                                         if (chat.lastMessageDate > 0) Text(formatTelegramChatTime(chat.lastMessageDate), color = TextMuted, fontSize = 11.sp)
                                     }
@@ -1202,6 +1213,8 @@ private fun AuthenticatedUserCard(
                                             Box(modifier = Modifier.padding(start = 6.dp).clip(CircleShape).background(TelegramBlue).padding(horizontal = 7.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
                                                 Text(if (chat.unreadCount > 99) "99+" else chat.unreadCount.toString(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                             }
+                                        } else if (chat.isMarkedAsUnread) {
+                                            Box(modifier = Modifier.padding(start = 6.dp).size(9.dp).clip(CircleShape).background(TelegramBlue))
                                         }
                                     }
                                 }

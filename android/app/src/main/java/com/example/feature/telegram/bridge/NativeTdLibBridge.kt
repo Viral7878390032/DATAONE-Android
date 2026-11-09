@@ -272,8 +272,15 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     isMarkedAsUnread = chat.isMarkedAsUnread,
                                     isArchived = chat.id in archivedIds,
                                     isMuted = chat.notificationSettings.muteFor > 0,
-                                    unreadMentionCount = chat.unreadMentionCount
-                                )
+                                    unreadMentionCount = chat.unreadMentionCount,
+                                    photoFileId = chat.photo?.small?.id ?: 0,
+                                    photoFilePath = chat.photo?.small?.local?.path?.takeIf { chat.photo.small.local.isDownloadingCompleted && it.isNotBlank() }
+                                ).also { chatModel ->
+                                    val photoFile = chat.photo?.small
+                                    if (photoFile != null && !photoFile.local.isDownloadingCompleted) {
+                                        runCatching { sendRequest(TdApi.DownloadFile(photoFile.id, 16, 0, 0, false)) }
+                                    }
+                                }
                             } catch (error: Throwable) {
                                 Log.w(tag, "Could not load Telegram chat $id", error)
                                 null
@@ -639,6 +646,13 @@ class NativeTdLibBridge : TelegramClientBridge {
     }
 
     private fun updateMessageFile(file: TdApi.File) {
+        _chats.update { current ->
+            current.map { chat ->
+                if (chat.photoFileId == file.id) {
+                    chat.copy(photoFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() })
+                } else chat
+            }
+        }
         _messages.update { current ->
             current.map { message ->
                 if (message.mediaFileId == file.id) {

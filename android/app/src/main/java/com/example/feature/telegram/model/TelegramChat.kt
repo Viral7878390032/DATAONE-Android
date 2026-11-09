@@ -10,5 +10,7 @@ data class TelegramChat(
     val isMarkedAsUnread: Boolean = false,
     val isArchived: Boolean = false,
     val isMuted: Boolean = false,
-    val unreadMentionCount: Int = 0
+    val unreadMentionCount: Int = 0,
+    val photoFileId: Int = 0,
+    val photoFilePath: String? = null
 )

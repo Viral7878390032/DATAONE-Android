@@ -138,8 +138,8 @@ class TelegramRepositoryImpl(
     override suspend fun openChat(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.openChat(chatId) }
     override suspend fun loadOlderMessages(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.loadOlderMessages(chatId) }
 
-    override suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit> = withContext(ioDispatcher) {
-        clientBridge.sendTextMessage(chatId, text)
+    override suspend fun sendTextMessage(chatId: Long, text: String, replyToMessageId: Long?): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.sendTextMessage(chatId, text, replyToMessageId)
     }
 
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = withContext(ioDispatcher) {

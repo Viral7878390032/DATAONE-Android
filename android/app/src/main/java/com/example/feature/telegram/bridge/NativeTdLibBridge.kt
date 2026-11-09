@@ -406,7 +406,7 @@ class NativeTdLibBridge : TelegramClientBridge {
         if (isPinned) {
             sendRequest(TdApi.UnpinChatMessage(chatId, messageId))
         } else {
-            sendRequest(TdApi.PinChatMessage(chatId, messageId, true))
+            sendRequest(TdApi.PinChatMessage(chatId, messageId, true, false))
         }
         if (selectedChatId == chatId) openChat(chatId)
         Result.success(Unit)

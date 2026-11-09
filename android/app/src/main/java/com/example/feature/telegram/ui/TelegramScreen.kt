@@ -59,7 +59,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Visibility
@@ -70,7 +69,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.window.Dialog
@@ -1810,7 +1808,7 @@ private fun TelegramVideoContent(
                             .size(54.dp)
                             .background(Color(0xCC000000), RoundedCornerShape(50))
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Play video", tint = Color.White)
+                        Text("▶", color = Color.White, fontSize = 24.sp)
                     }
                 } else {
                     TextButton(
@@ -1828,9 +1826,10 @@ private fun TelegramVideoContent(
             }
             Text("Video", color = TextPrimary, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))
             if (message.isMediaDownloading) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    color = TelegramBlue
+                CircularProgressIndicator(
+                    modifier = Modifier.padding(top = 8.dp).size(18.dp),
+                    color = TelegramBlue,
+                    strokeWidth = 2.dp
                 )
             }
         }

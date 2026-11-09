@@ -1706,6 +1706,15 @@ private fun AuthenticatedUserCard(
                                     Text("Share", color = TelegramBlue)
                                 }
                                 TextButton(
+                                    enabled = selected.mediaFileId != null,
+                                    onClick = {
+                                        selected.mediaFileId?.let(onDownloadMedia)
+                                            ?: Toast.makeText(context, "Original media is unavailable.", Toast.LENGTH_SHORT).show()
+                                    }
+                                ) {
+                                    Text("Download", color = if (selected.mediaFileId != null) TelegramBlue else TextMuted)
+                                }
+                                TextButton(
                                     enabled = selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex,
                                     onClick = {
                                         if (selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex) {

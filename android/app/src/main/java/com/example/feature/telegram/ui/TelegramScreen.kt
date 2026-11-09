@@ -1103,43 +1103,67 @@ private fun AuthenticatedUserCard(
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedChatId == null) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 16.dp, vertical = 14.dp),
+                    modifier = Modifier.fillMaxWidth().background(
+                        Brush.horizontalGradient(listOf(Color(0xFF142438), SurfaceDark))
+                    ).padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val accountAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, user.profilePhotoLocalPath) {
+                        value = if (user.profilePhotoLocalPath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
+                            runCatching { BitmapFactory.decodeFile(user.profilePhotoLocalPath) }.getOrNull()
+                        }
+                    }
                     Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).background(TelegramBlue),
+                        modifier = Modifier.size(48.dp).clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(TelegramBlue, AccentCyan))),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(user.firstName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        if (accountAvatar != null) {
+                            Image(bitmap = accountAvatar!!.asImageBitmap(), contentDescription = "Your Telegram profile photo",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
+                        } else {
+                            Text(user.displayName.trim().take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                        }
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(11.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(user.displayName.ifBlank { user.firstName }, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text("✓", color = TelegramBlue, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            Text(user.displayName.ifBlank { user.firstName }, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            if (user.isVerified) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("✓", color = TelegramBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
-                        Text("VV - Mobile number", color = TextSecondary, fontSize = 12.sp, maxLines = 1)
+                        Text(
+                            user.username?.let { "@$it" } ?: user.phoneNumber.ifBlank { "Telegram account" },
+                            color = TextSecondary, fontSize = 12.sp, maxLines = 1
+                        )
                     }
                     IconButton(onClick = onRefreshChats, enabled = !isLoadingChats) {
-                        if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Default.Refresh, contentDescription = "Refresh chats", tint = TelegramBlue)
+                        if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(19.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Default.Refresh, contentDescription = "Refresh chats", tint = AccentCyan)
                     }
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 9.dp, bottom = 7.dp),
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(if (showArchivedOnly) "Archived chats" else "All chats", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    OutlinedButton(onClick = { showNewChatDialog = true }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)) { Text("+ New chat", color = TelegramBlue, fontSize = 12.sp) }
+                    OutlinedButton(
+                        onClick = { showNewChatDialog = true },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = TelegramBlue.copy(alpha = 0.12f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, TelegramBlue.copy(alpha = 0.55f))
+                    ) { Text("+ New chat", color = Color(0xFF75C9F2), fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+                    Spacer(modifier = Modifier.width(8.dp))
                     OutlinedButton(
                         onClick = { sortChatsByName = !sortChatsByName },
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceCard),
                         border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
                     ) {
-                        Text(if (sortChatsByName) "Sort: Name" else "Sort: Recent 11", fontSize = 11.sp, color = TelegramBlue)
+                        Text(if (sortChatsByName) "Sort by: Name" else "Sort by: Recent", fontSize = 11.sp, color = TextPrimary)
                     }
-                    Text("${visibleChats.size}", color = TextSecondary, fontSize = 12.sp)
                 }
                 OutlinedTextField(
                     value = chatSearchQuery,
@@ -1296,9 +1320,12 @@ private fun AuthenticatedUserCard(
             } else {
                 val activeChat = chats.firstOrNull { it.id == selectedChatId }
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 10.dp, vertical = 9.dp),
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(onClick = onCloseChat, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back to chat list", tint = TextPrimary)
+                    }
                     val conversationAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, activeChat?.photoFilePath) {
                         value = if (activeChat?.photoFilePath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
                             runCatching { BitmapFactory.decodeFile(activeChat?.photoFilePath) }.getOrNull()

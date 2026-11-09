@@ -506,9 +506,16 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
 
         if (selectedChatId == chatId) {
-            _messages.value = allMessages.values
+            val loadedMessages = allMessages.values
                 .sortedWith(compareBy<TdApi.Message> { it.date }.thenBy { it.id })
                 .map(::toTelegramMessage)
+            _messages.value = loadedMessages
+            // Fetch small photo/video previews automatically; original media stays on-demand.
+            loadedMessages.mapNotNull { message ->
+                message.previewFileId?.takeIf { message.mediaType == "photo" || message.mediaType == "video" }
+            }.distinct().takeLast(40).forEach { fileId ->
+                runCatching { sendRequest(TdApi.DownloadFile(fileId, 8, 0, 0, false)) }
+            }
             // The entire available history has been fetched; no extra scroll paging is needed.
             hasMoreChatHistory = false
             if (newestBatch.isNotEmpty()) {

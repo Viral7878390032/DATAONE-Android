@@ -1151,6 +1151,41 @@ private fun AuthenticatedUserCard(
                     }
                 }
                 Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Messages",
+                            color = TextPrimary,
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.4).sp
+                        )
+                        Text(
+                            "${chats.size} conversations  •  ${unreadChatsCount} unread",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 3.dp)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(StatusSuccess.copy(alpha = 0.12f))
+                            .border(1.dp, StatusSuccess.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(6.dp).clip(CircleShape).background(StatusSuccess))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Connected", color = StatusSuccess, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+                Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 9.dp, bottom = 7.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
@@ -1174,10 +1209,11 @@ private fun AuthenticatedUserCard(
                 OutlinedTextField(
                     value = chatSearchQuery,
                     onValueChange = { chatSearchQuery = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
                     placeholder = { Text("Search chats or recent messages", color = TextMuted) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextMuted) },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(18.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,

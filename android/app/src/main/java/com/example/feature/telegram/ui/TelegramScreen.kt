@@ -1919,7 +1919,11 @@ private fun AuthenticatedUserCard(
                     }
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(BackgroundDark)
+                        .border(1.dp, BorderHairline.copy(alpha = 0.85f), RoundedCornerShape(22.dp))
+                        .padding(horizontal = 7.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
@@ -1955,8 +1959,8 @@ private fun AuthenticatedUserCard(
                     OutlinedTextField(
                         value = messageDraft,
                         onValueChange = onMessageDraftChange,
-                        modifier = Modifier.weight(1f).heightIn(min = 50.dp),
-                        placeholder = { Text("Write a message…", color = TextMuted, fontSize = 14.sp) },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                        placeholder = { Text("Message", color = TextMuted, fontSize = 14.sp) },
                         maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = TelegramBlue,
@@ -1967,7 +1971,7 @@ private fun AuthenticatedUserCard(
                             unfocusedContainerColor = SurfaceCard,
                             cursorColor = TelegramBlue
                         ),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(24.dp)
                     )
                     Box {
                         IconButton(
@@ -2003,8 +2007,21 @@ private fun AuthenticatedUserCard(
                             )
                         }
                     }
-                    IconButton(onClick = { onSendMessage(replyTarget?.id); replyTarget = null }, enabled = messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
-                        Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)
+                    IconButton(
+                        onClick = { onSendMessage(replyTarget?.id); replyTarget = null },
+                        enabled = messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice,
+                        modifier = Modifier
+                            .padding(start = 3.dp)
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) TelegramBlue else SurfaceCard)
+                    ) {
+                        Icon(
+                            Icons.Default.Send,
+                            contentDescription = "Send message",
+                            tint = if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) Color.White else TextMuted,
+                            modifier = Modifier.size(19.dp)
+                        )
                     }
                 }
             }

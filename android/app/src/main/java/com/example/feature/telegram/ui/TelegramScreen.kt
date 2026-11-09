@@ -1694,6 +1694,18 @@ private fun AuthenticatedUserCard(
                                     Text("‹ Previous", color = if (selectedIndex > 0) TelegramBlue else TextMuted)
                                 }
                                 TextButton(
+                                    onClick = {
+                                        val mediaPath = selected.mediaFilePath
+                                        if (!mediaPath.isNullOrBlank()) {
+                                            shareTelegramMedia(context, mediaPath, selected.mediaType ?: "photo")
+                                        } else {
+                                            Toast.makeText(context, "Media file is not available yet.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                ) {
+                                    Text("Share", color = TelegramBlue)
+                                }
+                                TextButton(
                                     enabled = selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex,
                                     onClick = {
                                         if (selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex) {

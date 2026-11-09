@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
@@ -808,6 +809,7 @@ private fun AuthenticatedUserCard(
             .thenByDescending { if (sortChatsByName) 0 else it.lastMessageDate }
     )
     var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
+    var showConversationSearch by remember(selectedChatId) { mutableStateOf(false) }
     val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -1047,36 +1049,47 @@ private fun AuthenticatedUserCard(
             } else {
                 val activeChat = chats.firstOrNull { it.id == selectedChatId }
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 10.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onCloseChat) { Icon(Icons.Default.ArrowBack, contentDescription = "Back to chats", tint = TelegramBlue) }
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(TelegramBlue), contentAlignment = Alignment.Center) {
-                        Text(activeChat?.title?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Bold)
+                    IconButton(onClick = onCloseChat) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back to chats", tint = TelegramBlue)
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Box(
+                        modifier = Modifier.size(44.dp).clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(TelegramBlue, AccentCyan))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(activeChat?.title?.trim()?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    }
+                    Spacer(modifier = Modifier.width(11.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                        Text("Telegram conversation", color = TextSecondary, fontSize = 11.sp)
+                        Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text("Telegram", color = TextSecondary, fontSize = 11.sp)
+                    }
+                    IconButton(onClick = { showConversationSearch = !showConversationSearch; if (!showConversationSearch) conversationSearchQuery = "" }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search messages", tint = TelegramBlue)
                     }
                 }
-                OutlinedTextField(
-                    value = conversationSearchQuery,
-                    onValueChange = { conversationSearchQuery = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                    placeholder = { Text("Search in conversation", color = TextMuted) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        focusedBorderColor = TelegramBlue,
-                        unfocusedBorderColor = BorderHairline,
-                        focusedContainerColor = SurfaceDark,
-                        unfocusedContainerColor = SurfaceDark,
-                        cursorColor = TelegramBlue
+                if (showConversationSearch) {
+                    OutlinedTextField(
+                        value = conversationSearchQuery,
+                        onValueChange = { conversationSearchQuery = it },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                        placeholder = { Text("Search messages in this chat", color = TextMuted) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = TelegramBlue,
+                            unfocusedBorderColor = BorderHairline,
+                            focusedContainerColor = SurfaceDark,
+                            unfocusedContainerColor = SurfaceDark,
+                            cursorColor = TelegramBlue
+                        )
                     )
-                )
+                }
                 if (isLoadingChats && messages.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
                 } else if (filteredMessages.isEmpty()) {

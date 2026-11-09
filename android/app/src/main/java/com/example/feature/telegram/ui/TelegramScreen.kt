@@ -1546,23 +1546,23 @@ private fun AuthenticatedUserCard(
                             items(filteredMessages, key = { it.id }) { message ->
                                 var showMessageMenu by remember(message.id) { mutableStateOf(false) }
                                 Column(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start
                                 ) {
                                     Surface(
-                                        color = if (message.isOutgoing) Color(0xFF1B526F) else Color(0xFF202B38),
+                                        color = if (message.isOutgoing) Color(0xFF174E6B) else Color(0xFF1B2634),
                                         shape = RoundedCornerShape(
-                                            topStart = 18.dp, topEnd = 18.dp,
-                                            bottomStart = if (message.isOutgoing) 18.dp else 5.dp,
-                                            bottomEnd = if (message.isOutgoing) 5.dp else 18.dp
+                                            topStart = 19.dp, topEnd = 19.dp,
+                                            bottomStart = if (message.isOutgoing) 19.dp else 6.dp,
+                                            bottomEnd = if (message.isOutgoing) 6.dp else 19.dp
                                         ),
                                         border = androidx.compose.foundation.BorderStroke(
-                                            0.5.dp,
-                                            if (message.isOutgoing) Color(0xFF286887) else Color(0xFF2A3949)
+                                            0.7.dp,
+                                            if (message.isOutgoing) Color(0xFF286887).copy(alpha = 0.85f) else Color(0xFF304154)
                                         ),
-                                        modifier = Modifier.fillMaxWidth(0.84f)
+                                        modifier = Modifier.fillMaxWidth(0.82f)
                                     ) {
-                                        Column(modifier = Modifier.padding(7.dp)) {
+                                        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
                                             if (message.isPinned) {
                                                 Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp,
                                                     modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp))
@@ -1577,13 +1577,13 @@ private fun AuthenticatedUserCard(
                                                 Text(
                                                     text = message.text,
                                                     color = TextPrimary,
-                                                    fontSize = 14.sp,
-                                                    lineHeight = 20.sp,
-                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 5.dp)
+                                                    fontSize = 14.5.sp,
+                                                    lineHeight = 21.sp,
+                                                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 5.dp)
                                                 )
                                             }
                                             Row(
-                                                modifier = Modifier.fillMaxWidth().padding(start = 5.dp, end = 3.dp, top = 1.dp),
+                                                modifier = Modifier.fillMaxWidth().padding(start = 3.dp, end = 1.dp, top = 3.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.End
                                             ) {

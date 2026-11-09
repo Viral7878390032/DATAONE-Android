@@ -1210,27 +1210,6 @@ private fun AuthenticatedUserCard(
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedChatId == null) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier = Modifier.size(44.dp).clip(CircleShape).background(TelegramBlue), contentAlignment = Alignment.Center) {
-                        Text(user.firstName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Telegram", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text("✓", color = TelegramBlue, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Text("VV - Mobile number", color = TextSecondary, fontSize = 12.sp, maxLines = 1)
-                    }
-                    IconButton(onClick = onRefreshChats, enabled = !isLoadingChats) {
-                        if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Default.Refresh, contentDescription = "Refresh chats", tint = TelegramBlue)
-                    }
-                }
-                Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1403,9 +1382,6 @@ private fun AuthenticatedUserCard(
                     modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 10.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onCloseChat) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back to chats", tint = TelegramBlue)
-                    }
                     val conversationAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, activeChat?.photoFilePath) {
                         value = if (activeChat?.photoFilePath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
                             runCatching { BitmapFactory.decodeFile(activeChat?.photoFilePath) }.getOrNull()

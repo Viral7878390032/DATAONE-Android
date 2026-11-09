@@ -279,6 +279,7 @@ fun TelegramScreen(
                         onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
                         onSendMessage = { replyToId -> viewModel.sendMessage(replyToId) },
                         onForwardMessage = { fromChat, message, toChat -> viewModel.forwardMessage(fromChat, message, toChat) },
+                        onEditMessage = { messageId, text -> viewModel.editTextMessage(messageId, text) },
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
@@ -780,6 +781,7 @@ private fun AuthenticatedUserCard(
     onMessageDraftChange: (String) -> Unit,
     onSendMessage: (Long?) -> Unit,
     onForwardMessage: (Long, Long, Long) -> Unit,
+    onEditMessage: (Long, String) -> Unit,
     onSendPhoto: (String) -> Unit,
     onSendVideo: (String) -> Unit,
     onSendDocument: (String) -> Unit,
@@ -817,6 +819,31 @@ private fun AuthenticatedUserCard(
     val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
     var replyTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var forwardTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    var editDraft by remember(selectedChatId) { mutableStateOf("") }
+    if (editTarget != null) {
+        AlertDialog(
+            onDismissRequest = { editTarget = null },
+            title = { Text("Edit message") },
+            text = {
+                OutlinedTextField(
+                    value = editDraft,
+                    onValueChange = { editDraft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Message text") },
+                    minLines = 2,
+                    maxLines = 5
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    editTarget?.let { onEditMessage(it.id, editDraft) }
+                    editTarget = null
+                }, enabled = editDraft.isNotBlank()) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { editTarget = null }) { Text("Cancel") } }
+        )
+    }
     if (forwardTarget != null) {
         AlertDialog(
             onDismissRequest = { forwardTarget = null },
@@ -1163,6 +1190,12 @@ private fun AuthenticatedUserCard(
                                             TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
                                         }
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                            if (message.isOutgoing && message.mediaType == null && message.text.isNotBlank()) {
+                                                TextButton(
+                                                    onClick = { editTarget = message; editDraft = message.text },
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                                ) { Text("Edit", color = TelegramBlue, fontSize = 11.sp) }
+                                            }
                                             TextButton(
                                                 onClick = { replyTarget = message },
                                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)

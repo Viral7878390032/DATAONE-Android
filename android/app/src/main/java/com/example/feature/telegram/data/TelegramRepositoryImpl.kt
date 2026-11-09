@@ -146,6 +146,10 @@ class TelegramRepositoryImpl(
         clientBridge.forwardMessage(fromChatId, messageId, toChatId)
     }
 
+    override suspend fun editTextMessage(chatId: Long, messageId: Long, newText: String): Result<Unit> = withContext(ioDispatcher) {
+        clientBridge.editTextMessage(chatId, messageId, newText)
+    }
+
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = withContext(ioDispatcher) {
         clientBridge.sendPhotoMessage(chatId, path, caption)
     }

@@ -221,6 +221,14 @@ class TelegramViewModel(
         }
     }
 
+    fun editTextMessage(messageId: Long, newText: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch {
+            val result = repository.editTextMessage(chatId, messageId, newText)
+            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
     fun sendMessage(replyToMessageId: Long? = null) {
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()

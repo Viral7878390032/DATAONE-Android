@@ -377,6 +377,16 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 
+    override suspend fun editTextMessage(chatId: Long, messageId: Long, newText: String): Result<Unit> = try {
+        val cleanText = newText.trim()
+        require(chatId != 0L && messageId != 0L) { "Select a valid message to edit." }
+        require(cleanText.isNotEmpty()) { "Message cannot be empty." }
+        val content = TdApi.InputMessageText(TdApi.FormattedText(cleanText, emptyArray()), null, true)
+        sendRequest(TdApi.EditMessageText(chatId, messageId, null, content))
+        if (selectedChatId == chatId) openChat(chatId)
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The selected photo could not be opened." }

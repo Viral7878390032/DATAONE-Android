@@ -472,26 +472,50 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun openChat(chatId: Long): Result<Unit> = try {
         require(chatId != 0L) { "Select a valid Telegram chat." }
         selectedChatId = chatId
-        hasMoreChatHistory = true
+        hasMoreChatHistory = false
         isLoadingOlderHistory = false
-        // Never show messages from the previously selected conversation.
         _messages.value = emptyList()
 
-        // Open the conversation in TDLib before requesting its real server history.
+        // Ask TDLib to open this conversation, then page through its complete
+        // server history. TDLib returns newest-first; the UI needs oldest-first.
         sendRequest(TdApi.OpenChat(chatId))
-        val result = sendRequest(TdApi.GetChatHistory(chatId, 0, 0, 50, false)) as TdApi.Messages
+        val allMessages = LinkedHashMap<Long, TdApi.Message>()
+        var fromMessageId = 0L
+        var newestBatch: Array<TdApi.Message> = emptyArray()
+        var keepLoading = true
+
+        while (keepLoading && selectedChatId == chatId) {
+            val page = sendRequest(
+                TdApi.GetChatHistory(chatId, fromMessageId, 0, 100, false)
+            ) as TdApi.Messages
+            if (page.messages.isEmpty()) {
+                keepLoading = false
+            } else {
+                newestBatch = page.messages
+                var added = 0
+                page.messages.forEach { message ->
+                    if (allMessages.put(message.id, message) == null) added++
+                }
+                val oldestInPage = page.messages.minByOrNull { it.id }?.id ?: 0L
+                if (page.messages.size < 100 || added == 0 || oldestInPage == 0L || oldestInPage == fromMessageId) {
+                    keepLoading = false
+                } else {
+                    fromMessageId = oldestInPage
+                }
+            }
+        }
+
         if (selectedChatId == chatId) {
-            val loadedMessages = result.messages.reversed().map(::toTelegramMessage)
-            // Keep any live messages received while history was in flight.
-            _messages.value = (loadedMessages + _messages.value)
-                .distinctBy { it.id }
-                .sortedWith(compareBy<TelegramMessage> { it.date }.thenBy { it.id })
-            hasMoreChatHistory = result.messages.size >= 50
-            if (result.messages.isNotEmpty()) {
+            _messages.value = allMessages.values
+                .sortedWith(compareBy<TdApi.Message> { it.date }.thenBy { it.id })
+                .map(::toTelegramMessage)
+            // The entire available history has been fetched; no extra scroll paging is needed.
+            hasMoreChatHistory = false
+            if (newestBatch.isNotEmpty()) {
                 sendRequest(
                     TdApi.ViewMessages(
                         chatId,
-                        result.messages.map { it.id }.toLongArray(),
+                        newestBatch.map { it.id }.toLongArray(),
                         null,
                         true
                     )

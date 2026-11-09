@@ -816,6 +816,7 @@ private fun AuthenticatedUserCard(
         }
     }
     var showSharedMedia by remember(selectedChatId) { mutableStateOf(false) }
+    var selectedSharedMediaMessage by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var sharedMediaTab by remember(selectedChatId) { mutableStateOf("All") }
     var showChatDetails by remember(selectedChatId) { mutableStateOf(false) }
     val linkPattern = remember { Regex("""(https?://\\S+|www\\.\\S+)""", RegexOption.IGNORE_CASE) }
@@ -1459,116 +1460,149 @@ private fun AuthenticatedUserCard(
                         }
                     }
                 }
-                if (isLoadingChats && messages.isEmpty()) {
-                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
-                } else if (filteredMessages.isEmpty()) {
-                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            if (showSharedMedia) "No ${sharedMediaTab.lowercase()} found in the loaded messages." else if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
-                            color = TextSecondary
-                        )
-                    }
+                if (showSharedMedia && sharedMediaTab in listOf("Photos", "Videos")) {
+                    SharedMediaGalleryGrid(
+                        messages = filteredMessages,
+                        onSelect = { selectedSharedMediaMessage = it }
+                    )
                 } else {
-                    val conversationListState = androidx.compose.foundation.lazy.rememberLazyListState()
-                    LaunchedEffect(selectedChatId) {
-                        if (filteredMessages.isNotEmpty()) {
-                            conversationListState.scrollToItem(filteredMessages.lastIndex)
+                    if (isLoadingChats && messages.isEmpty()) {
+                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
+                    } else if (filteredMessages.isEmpty()) {
+                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text(
+                                if (showSharedMedia) "No ${sharedMediaTab.lowercase()} found in the loaded messages." else if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
+                                color = TextSecondary
+                            )
                         }
-                    }
-                    LaunchedEffect(messages.size, selectedChatId, showSharedMedia, conversationSearchQuery) {
-                        if (!showSharedMedia && conversationSearchQuery.isBlank() && messages.isNotEmpty()) {
-                            conversationListState.animateScrollToItem(messages.lastIndex)
+                    } else {
+                        val conversationListState = androidx.compose.foundation.lazy.rememberLazyListState()
+                        LaunchedEffect(selectedChatId) {
+                            if (filteredMessages.isNotEmpty()) {
+                                conversationListState.scrollToItem(filteredMessages.lastIndex)
+                            }
                         }
-                    }
-                    LaunchedEffect(selectedChatId, conversationListState.firstVisibleItemIndex) {
-                        if (!showSharedMedia && conversationSearchQuery.isBlank() && conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
-                            onLoadOlderMessages()
+                        LaunchedEffect(messages.size, selectedChatId, showSharedMedia, conversationSearchQuery) {
+                            if (!showSharedMedia && conversationSearchQuery.isBlank() && messages.isNotEmpty()) {
+                                conversationListState.animateScrollToItem(messages.lastIndex)
+                            }
                         }
-                    }
-                    LazyColumn(
-                        state = conversationListState,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
-                    ) {
-                        items(filteredMessages, key = { it.id }) { message ->
-                            var showMessageMenu by remember(message.id) { mutableStateOf(false) }
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                                horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start
-                            ) {
-                                Surface(
-                                    color = if (message.isOutgoing) Color(0xFF1B526F) else Color(0xFF202B38),
-                                    shape = RoundedCornerShape(
-                                        topStart = 18.dp, topEnd = 18.dp,
-                                        bottomStart = if (message.isOutgoing) 18.dp else 5.dp,
-                                        bottomEnd = if (message.isOutgoing) 5.dp else 18.dp
-                                    ),
-                                    border = androidx.compose.foundation.BorderStroke(
-                                        0.5.dp,
-                                        if (message.isOutgoing) Color(0xFF286887) else Color(0xFF2A3949)
-                                    ),
-                                    modifier = Modifier.fillMaxWidth(0.84f)
+                        LaunchedEffect(selectedChatId, conversationListState.firstVisibleItemIndex) {
+                            if (!showSharedMedia && conversationSearchQuery.isBlank() && conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
+                                onLoadOlderMessages()
+                            }
+                        }
+                        LazyColumn(
+                            state = conversationListState,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+                        ) {
+                            items(filteredMessages, key = { it.id }) { message ->
+                                var showMessageMenu by remember(message.id) { mutableStateOf(false) }
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                    horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start
                                 ) {
-                                    Column(modifier = Modifier.padding(7.dp)) {
-                                        if (message.isPinned) {
-                                            Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp))
-                                        }
-                                        when (message.mediaType) {
-                                            "photo" -> TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
-                                            "video" -> TelegramVideoContent(message = message, onDownloadMedia = onDownloadMedia)
-                                            "audio", "voice" -> TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
-                                            "document" -> TelegramDocumentContent(message = message, onDownloadMedia = onDownloadMedia)
-                                        }
-                                        if (message.text.isNotBlank()) {
-                                            Text(
-                                                text = message.text,
-                                                color = TextPrimary,
-                                                fontSize = 14.sp,
-                                                lineHeight = 20.sp,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 5.dp)
-                                            )
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(start = 5.dp, end = 3.dp, top = 1.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
-                                            Text(formatTelegramChatTime(message.date), color = TextSecondary.copy(alpha = 0.85f), fontSize = 10.sp)
-                                            if (message.isOutgoing) {
-                                                Text("  ✓✓", color = Color(0xFF79C9F0), fontSize = 11.sp)
+                                    Surface(
+                                        color = if (message.isOutgoing) Color(0xFF1B526F) else Color(0xFF202B38),
+                                        shape = RoundedCornerShape(
+                                            topStart = 18.dp, topEnd = 18.dp,
+                                            bottomStart = if (message.isOutgoing) 18.dp else 5.dp,
+                                            bottomEnd = if (message.isOutgoing) 5.dp else 18.dp
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            0.5.dp,
+                                            if (message.isOutgoing) Color(0xFF286887) else Color(0xFF2A3949)
+                                        ),
+                                        modifier = Modifier.fillMaxWidth(0.84f)
+                                    ) {
+                                        Column(modifier = Modifier.padding(7.dp)) {
+                                            if (message.isPinned) {
+                                                Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp,
+                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp))
                                             }
-                                            Box {
-                                                IconButton(onClick = { showMessageMenu = true }, modifier = Modifier.size(27.dp)) {
-                                                    Icon(Icons.Default.MoreVert, contentDescription = "Message actions",
-                                                        tint = TextSecondary, modifier = Modifier.size(17.dp))
+                                            when (message.mediaType) {
+                                                "photo" -> TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
+                                                "video" -> TelegramVideoContent(message = message, onDownloadMedia = onDownloadMedia)
+                                                "audio", "voice" -> TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
+                                                "document" -> TelegramDocumentContent(message = message, onDownloadMedia = onDownloadMedia)
+                                            }
+                                            if (message.text.isNotBlank()) {
+                                                Text(
+                                                    text = message.text,
+                                                    color = TextPrimary,
+                                                    fontSize = 14.sp,
+                                                    lineHeight = 20.sp,
+                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 5.dp)
+                                                )
+                                            }
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(start = 5.dp, end = 3.dp, top = 1.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.End
+                                            ) {
+                                                Text(formatTelegramChatTime(message.date), color = TextSecondary.copy(alpha = 0.85f), fontSize = 10.sp)
+                                                if (message.isOutgoing) {
+                                                    Text("  ✓✓", color = Color(0xFF79C9F0), fontSize = 11.sp)
                                                 }
-                                                DropdownMenu(expanded = showMessageMenu, onDismissRequest = { showMessageMenu = false }) {
-                                                    DropdownMenuItem(text = { Text("Reply") }, onClick = { replyTarget = message; showMessageMenu = false })
-                                                    DropdownMenuItem(text = { Text("Forward") }, onClick = { forwardTarget = message; showMessageMenu = false })
-                                                    DropdownMenuItem(text = { Text(if (message.isPinned) "Unpin message" else "Pin message") },
-                                                        onClick = { onToggleMessagePinned(message.id, message.isPinned); showMessageMenu = false })
-                                                    DropdownMenuItem(text = { Text("👍 React") }, onClick = { onReactMessage(message.id, "👍"); showMessageMenu = false })
-                                                    if (message.isOutgoing && message.mediaType == null && message.text.isNotBlank()) {
-                                                        DropdownMenuItem(text = { Text("Edit") }, onClick = {
-                                                            editTarget = message; editDraft = message.text; showMessageMenu = false
-                                                        })
+                                                Box {
+                                                    IconButton(onClick = { showMessageMenu = true }, modifier = Modifier.size(27.dp)) {
+                                                        Icon(Icons.Default.MoreVert, contentDescription = "Message actions",
+                                                            tint = TextSecondary, modifier = Modifier.size(17.dp))
                                                     }
-                                                    DropdownMenuItem(text = { Text("Delete", color = Color(0xFFFF7777)) },
-                                                        onClick = { deleteTarget = message; showMessageMenu = false })
-                                                    if (message.text.isNotBlank()) {
-                                                        DropdownMenuItem(text = { Text("Copy") }, onClick = {
-                                                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                                            clipboard.setPrimaryClip(ClipData.newPlainText("Telegram message", message.text))
-                                                            Toast.makeText(context, "Message copied", Toast.LENGTH_SHORT).show()
-                                                            showMessageMenu = false
-                                                        })
+                                                    DropdownMenu(expanded = showMessageMenu, onDismissRequest = { showMessageMenu = false }) {
+                                                        DropdownMenuItem(text = { Text("Reply") }, onClick = { replyTarget = message; showMessageMenu = false })
+                                                        DropdownMenuItem(text = { Text("Forward") }, onClick = { forwardTarget = message; showMessageMenu = false })
+                                                        DropdownMenuItem(text = { Text(if (message.isPinned) "Unpin message" else "Pin message") },
+                                                            onClick = { onToggleMessagePinned(message.id, message.isPinned); showMessageMenu = false })
+                                                        DropdownMenuItem(text = { Text("👍 React") }, onClick = { onReactMessage(message.id, "👍"); showMessageMenu = false })
+                                                        if (message.isOutgoing && message.mediaType == null && message.text.isNotBlank()) {
+                                                            DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                                                                editTarget = message; editDraft = message.text; showMessageMenu = false
+                                                            })
+                                                        }
+                                                        DropdownMenuItem(text = { Text("Delete", color = Color(0xFFFF7777)) },
+                                                            onClick = { deleteTarget = message; showMessageMenu = false })
+                                                        if (message.text.isNotBlank()) {
+                                                            DropdownMenuItem(text = { Text("Copy") }, onClick = {
+                                                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                                clipboard.setPrimaryClip(ClipData.newPlainText("Telegram message", message.text))
+                                                                Toast.makeText(context, "Message copied", Toast.LENGTH_SHORT).show()
+                                                                showMessageMenu = false
+                                                            })
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+                    }
+                if (selectedSharedMediaMessage != null) {
+                    val selected = selectedSharedMediaMessage!!
+                    Dialog(onDismissRequest = { selectedSharedMediaMessage = null }) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(BackgroundDark)
+                                .border(1.dp, BorderHairline, RoundedCornerShape(18.dp))
+                                .padding(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (selected.mediaType == "video") "Video" else "Photo", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                                TextButton(onClick = { selectedSharedMediaMessage = null }) { Text("Close", color = TelegramBlue) }
+                            }
+                            if (selected.mediaType == "video") {
+                                TelegramVideoContent(message = selected, onDownloadMedia = onDownloadMedia)
+                            } else {
+                                TelegramPhotoContent(message = selected, onDownloadMedia = onDownloadMedia)
                             }
                         }
                     }
@@ -1672,6 +1706,82 @@ private fun AuthenticatedUserCard(
                     }
                     IconButton(onClick = { onSendMessage(replyTarget?.id); replyTarget = null }, enabled = messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun SharedMediaGalleryGrid(
+    messages: List<com.example.feature.telegram.model.TelegramMessage>,
+    onSelect: (com.example.feature.telegram.model.TelegramMessage) -> Unit
+) {
+    if (messages.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No shared media in this chat yet.", color = TextSecondary)
+        }
+        return
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        items(messages, key = { it.id }) { message ->
+            val thumbnailPath = message.previewFilePath ?: message.mediaFilePath
+            val thumbnail by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+                initialValue = null,
+                key1 = thumbnailPath
+            ) {
+                value = withContext(Dispatchers.IO) {
+                    thumbnailPath?.takeIf { it.isNotBlank() }
+                        ?.let { runCatching { BitmapFactory.decodeFile(it)?.asImageBitmap() }.getOrNull() }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(116.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(SurfaceCard)
+                    .border(1.dp, BorderHairline, RoundedCornerShape(10.dp))
+                    .clickable { onSelect(message) },
+                contentAlignment = Alignment.Center
+            ) {
+                if (thumbnail != null) {
+                    Image(
+                        bitmap = thumbnail!!,
+                        contentDescription = if (message.mediaType == "video") "Shared video thumbnail" else "Shared photo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = if (message.mediaType == "video") Icons.Default.VideoLibrary else Icons.Default.Image,
+                            contentDescription = null,
+                            tint = TelegramBlue,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            if (message.isMediaDownloading) "Loading…" else "Preview",
+                            color = TextSecondary,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                if (message.mediaType == "video") {
+                    Box(
+                        modifier = Modifier.align(Alignment.Center).size(30.dp)
+                            .clip(CircleShape).background(Color(0xB9000000)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("▶", color = Color.White, fontSize = 13.sp)
                     }
                 }
             }

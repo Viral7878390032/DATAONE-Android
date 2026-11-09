@@ -1778,6 +1778,38 @@ private fun AuthenticatedUserCard(
                                     Text("Next ›", color = if (selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex) TelegramBlue else TextMuted)
                                 }
                             }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(
+                                    onClick = {
+                                        val dateText = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+                                            .format(Date(selected.date * 1000L))
+                                        val timeText = SimpleDateFormat("h:mm a", Locale.getDefault())
+                                            .format(Date(selected.date * 1000L))
+                                        val sizeText = selected.mediaFilePath?.let { path ->
+                                            val file = java.io.File(path)
+                                            if (file.exists() && file.isFile) {
+                                                android.text.format.Formatter.formatShortFileSize(context, file.length())
+                                            } else null
+                                        } ?: "Not downloaded"
+                                        val details = listOfNotNull(
+                                            "Type: ${selected.mediaType ?: "Media"}",
+                                            selected.mediaFileName?.takeIf { it.isNotBlank() }?.let { "Filename: $it" },
+                                            "Date: $dateText",
+                                            "Time: $timeText",
+                                            "Status: ${if (selected.isOutgoing) "Sent" else "Received"}",
+                                            "Size: $sizeText"
+                                        ).joinToString("\n")
+                                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        clipboard.setPrimaryClip(ClipData.newPlainText("Media details", details))
+                                        Toast.makeText(context, "Media details copied", Toast.LENGTH_SHORT).show()
+                                    }
+                                ) {
+                                    Text("Copy media details", color = TelegramBlue)
+                                }
+                            }
                         }
                     }
                 }

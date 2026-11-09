@@ -1449,8 +1449,11 @@ private fun AuthenticatedUserCard(
                 }
                 if (showSharedMedia) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        modifier = Modifier.fillMaxWidth().background(SurfaceDark)
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 10.dp, vertical = 7.dp),
+                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf("All", "Photos", "Videos", "Files", "Links").forEach { tab ->
                             val tabCount = when (tab) {
@@ -1460,16 +1463,27 @@ private fun AuthenticatedUserCard(
                                 "Links" -> sharedMediaMessages.count { isSharedLink(it) }
                                 else -> sharedMediaMessages.size
                             }
-                            TextButton(
-                                onClick = { sharedMediaTab = tab; onLoadSharedMedia(tab) },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                            val isSelected = sharedMediaTab == tab
+                            Row(
+                                modifier = Modifier.clip(RoundedCornerShape(18.dp))
+                                    .background(if (isSelected) TelegramBlue.copy(alpha = 0.16f) else SurfaceCard)
+                                    .clickable { sharedMediaTab = tab; onLoadSharedMedia(tab) }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 Text(
-                                    "$tab $tabCount",
-                                    color = if (sharedMediaTab == tab) TelegramBlue else TextSecondary,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (sharedMediaTab == tab) FontWeight.Bold else FontWeight.Normal,
+                                    tab,
+                                    color = if (isSelected) TelegramBlue else TextSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     maxLines = 1
+                                )
+                                Text(
+                                    tabCount.toString(),
+                                    color = if (isSelected) TelegramBlue else TextMuted,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }

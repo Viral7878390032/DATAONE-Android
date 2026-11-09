@@ -1676,6 +1676,35 @@ private fun AuthenticatedUserCard(
                                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
                                             )
                                         }
+                                    } else if (selected.mediaType == "video") {
+                                        val retriever = android.media.MediaMetadataRetriever()
+                                        try {
+                                            retriever.setDataSource(mediaFile.absolutePath)
+                                            val width = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+                                            val height = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+                                            val durationMs = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+                                            if (width > 0 && height > 0) {
+                                                Text(
+                                                    text = "Resolution · $width × $height",
+                                                    color = TextSecondary,
+                                                    fontSize = 11.sp,
+                                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                            if (durationMs > 0L) {
+                                                val totalSeconds = durationMs / 1000L
+                                                val durationLabel = String.format(Locale.getDefault(), "%d:%02d", totalSeconds / 60L, totalSeconds % 60L)
+                                                Text(
+                                                    text = "Duration · $durationLabel",
+                                                    color = TextSecondary,
+                                                    fontSize = 11.sp,
+                                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        } catch (_: Exception) {
+                                        } finally {
+                                            retriever.release()
+                                        }
                                     }
                                 }
                             }

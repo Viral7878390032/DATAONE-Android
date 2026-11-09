@@ -1663,6 +1663,20 @@ private fun AuthenticatedUserCard(
                                         fontSize = 11.sp,
                                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
                                     )
+                                    if (selected.mediaType == "photo") {
+                                        val imageOptions = android.graphics.BitmapFactory.Options().apply {
+                                            inJustDecodeBounds = true
+                                        }
+                                        android.graphics.BitmapFactory.decodeFile(mediaFile.absolutePath, imageOptions)
+                                        if (imageOptions.outWidth > 0 && imageOptions.outHeight > 0) {
+                                            Text(
+                                                text = "Resolution · ${imageOptions.outWidth} × ${imageOptions.outHeight}",
+                                                color = TextSecondary,
+                                                fontSize = 11.sp,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                             Row(

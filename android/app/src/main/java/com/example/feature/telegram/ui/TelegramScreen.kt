@@ -1637,6 +1637,22 @@ private fun AuthenticatedUserCard(
                                     TelegramPhotoContent(message = selected, onDownloadMedia = onDownloadMedia)
                                 }
                             }
+                            selected.text.takeIf { it.isNotBlank() }?.let { caption ->
+                                Text(
+                                    text = caption,
+                                    color = TextPrimary,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)
+                                )
+                            }
+                            selected.mediaFileName?.takeIf { it.isNotBlank() }?.let { fileName ->
+                                Text(
+                                    text = fileName,
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                                )
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,

@@ -1745,6 +1745,7 @@ private fun saveTelegramMediaToGallery(context: android.content.Context, path: S
     }
 }
 
+@Composable
 private fun TelegramPhotoContent(message: com.example.feature.telegram.model.TelegramMessage, onDownloadMedia: (Int) -> Unit) {
     val context = LocalContext.current
     var showFullPreview by remember(message.id) { mutableStateOf(false) }
@@ -1806,10 +1807,10 @@ private fun TelegramVideoContent(
     ) {
         if (videoPath != null && isPlaying) {
             AndroidView(
-                factory = { context ->
-                    VideoView(context).apply {
+                factory = { viewContext ->
+                    VideoView(viewContext).apply {
                         setVideoPath(videoPath)
-                        setMediaController(MediaController(context).also { it.setAnchorView(this) })
+                        setMediaController(MediaController(viewContext).also { it.setAnchorView(this) })
                         setOnPreparedListener { player -> player.start() }
                     }
                 },
@@ -1817,7 +1818,9 @@ private fun TelegramVideoContent(
                     .fillMaxWidth()
                     .height(240.dp)
             )
-            TextButton(onClick = { isPlaying = false }) { Text("Close player") }
+            TextButton(onClick = { isPlaying = false }) {
+                Text("Close player")
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -1842,6 +1845,7 @@ private fun TelegramVideoContent(
                         modifier = Modifier.size(42.dp)
                     )
                 }
+
                 if (videoPath != null) {
                     IconButton(
                         onClick = { isPlaying = true },
@@ -1865,13 +1869,29 @@ private fun TelegramVideoContent(
                     }
                 }
             }
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text("Video", color = TextPrimary, fontWeight = FontWeight.Medium)
-                if (!videoPath.isNullOrBlank()) TextButton(onClick = { saveTelegramMediaToGallery(context, videoPath, true) }) { Text("Save video") }
+                if (!videoPath.isNullOrBlank()) {
+                    TextButton(onClick = {
+                        saveTelegramMediaToGallery(context, videoPath, true)
+                    }) {
+                        Text("Save video")
+                    }
+                }
             }
-            if (message.isMediaDownloading)
+
+            if (message.isMediaDownloading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.padding(top = 8.dp).size(18.dp),
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .size(18.dp),
                     color = TelegramBlue,
                     strokeWidth = 2.dp
                 )

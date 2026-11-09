@@ -144,6 +144,16 @@ class TelegramViewModel(
         }
     }
 
+    fun loadSharedMedia(category: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch {
+            val result = repository.loadSharedMedia(chatId, category)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to load shared media.") }
+            }
+        }
+    }
+
     fun loadOlderMessages() {
         val chatId = _uiState.value.selectedChatId ?: return
         viewModelScope.launch {

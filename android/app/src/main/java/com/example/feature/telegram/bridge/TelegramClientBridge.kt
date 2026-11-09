@@ -85,6 +85,7 @@ interface TelegramClientBridge {
     suspend fun getChatDetails(chatId: Long): Result<TelegramChatDetails>
     suspend fun openChat(chatId: Long): Result<Unit>
     suspend fun searchChatMessages(chatId: Long, query: String): Result<Unit>
+    suspend fun loadSharedMedia(chatId: Long, category: String): Result<Unit>
     suspend fun loadOlderMessages(chatId: Long): Result<Unit>
     suspend fun forwardMessage(fromChatId: Long, messageId: Long, toChatId: Long): Result<Unit>
     suspend fun editTextMessage(chatId: Long, messageId: Long, newText: String): Result<Unit>

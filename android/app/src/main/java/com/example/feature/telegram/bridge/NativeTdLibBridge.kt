@@ -402,6 +402,31 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 
+    override suspend fun loadSharedMedia(chatId: Long, category: String): Result<Unit> = try {
+        require(chatId != 0L) { "Select a Telegram chat first." }
+        val filters: List<TdApi.SearchMessagesFilter> = when (category) {
+            "Photos" -> listOf(TdApi.SearchMessagesFilterPhoto())
+            "Videos" -> listOf(TdApi.SearchMessagesFilterVideo())
+            "Files" -> listOf(TdApi.SearchMessagesFilterDocument(), TdApi.SearchMessagesFilterAudio(), TdApi.SearchMessagesFilterVoice())
+            "Links" -> listOf(TdApi.SearchMessagesFilterUrl())
+            else -> listOf(TdApi.SearchMessagesFilterPhoto(), TdApi.SearchMessagesFilterVideo(), TdApi.SearchMessagesFilterDocument(), TdApi.SearchMessagesFilterAudio(), TdApi.SearchMessagesFilterVoice(), TdApi.SearchMessagesFilterUrl())
+        }
+        val found = filters.flatMap { filter ->
+            val request = TdApi.SearchChatMessages()
+            request.chatId = chatId
+            request.query = ""
+            request.fromMessageId = 0
+            request.offset = 0
+            request.limit = 100
+            request.filter = filter
+            (sendRequest(request) as TdApi.FoundChatMessages).messages.toList()
+        }.distinctBy { it.id }.sortedBy { it.date }
+        if (selectedChatId == chatId) _messages.value = found.map(::toTelegramMessage)
+        Result.success(Unit)
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
+
     override suspend fun loadOlderMessages(chatId: Long): Result<Unit> {
         if (chatId != selectedChatId || isLoadingOlderHistory || !hasMoreChatHistory) return Result.success(Unit)
         val oldestMessageId = _messages.value.firstOrNull()?.id ?: return Result.success(Unit)

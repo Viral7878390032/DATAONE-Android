@@ -303,6 +303,7 @@ fun TelegramScreen(
                         onOpenChat = { viewModel.openChat(it) },
                         onLoadOlderMessages = { viewModel.loadOlderMessages() },
                         onSearchMessages = { viewModel.searchChatMessages(it) },
+                        onLoadSharedMedia = { viewModel.loadSharedMedia(it) },
                         onLoadChatDetails = { viewModel.loadChatDetails(it) },
                         chatDetails = uiState.chatDetails,
                         isLoadingChatDetails = uiState.isLoadingChatDetails,
@@ -814,6 +815,7 @@ private fun AuthenticatedUserCard(
     onOpenChat: (Long) -> Unit,
     onLoadOlderMessages: () -> Unit,
     onSearchMessages: (String) -> Unit,
+    onLoadSharedMedia: (String) -> Unit,
     onLoadChatDetails: (Long) -> Unit,
     chatDetails: com.example.feature.telegram.model.TelegramChatDetails?,
     isLoadingChatDetails: Boolean,
@@ -1246,7 +1248,13 @@ private fun AuthenticatedUserCard(
                     }
                     TextButton(onClick = {
                         showSharedMedia = !showSharedMedia
-                        if (!showSharedMedia) sharedMediaTab = "All"
+                        if (showSharedMedia) {
+                            sharedMediaTab = "All"
+                            onLoadSharedMedia("All")
+                        } else {
+                            sharedMediaTab = "All"
+                            selectedChatId?.let(onOpenChat)
+                        }
                     }) {
                         Text(if (showSharedMedia) "Messages" else "Media ($sharedMediaCount)", color = TelegramBlue, fontSize = 12.sp)
                     }
@@ -1280,7 +1288,7 @@ private fun AuthenticatedUserCard(
                     ) {
                         listOf("All", "Photos", "Videos", "Files", "Links").forEach { tab ->
                             TextButton(
-                                onClick = { sharedMediaTab = tab },
+                                onClick = { sharedMediaTab = tab; onLoadSharedMedia(tab) },
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Text(

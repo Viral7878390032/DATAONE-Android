@@ -444,6 +444,23 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.failure(error)
     }
 
+    override suspend fun sendAudioMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
+        require(chatId != 0L) { "Choose a Telegram chat first." }
+        require(path.isNotBlank() && File(path).isFile) { "The selected audio could not be opened." }
+        val content = TdApi.InputMessageAudio(
+            TdApi.InputFileLocal(path),
+            null,
+            0,
+            File(path).nameWithoutExtension.take(64),
+            "",
+            TdApi.FormattedText(caption, emptyArray())
+        )
+        sendRequest(TdApi.SendMessage(chatId, null, null, null, null, content))
+        openChat(chatId)
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
+
     override suspend fun sendTextMessage(chatId: Long, text: String, replyToMessageId: Long?): Result<Unit> = try {
         val cleanText = text.trim()
         require(chatId != 0L) { "Choose a Telegram chat first." }

@@ -285,6 +285,7 @@ fun TelegramScreen(
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
+                        onSendAudio = { path -> viewModel.sendAudioMessage(path) },
                         onDownloadMedia = { viewModel.downloadMessageMedia(it) },
                         onRefreshChats = { viewModel.refreshChats() },
                         onToggleChatPinned = { chatId, isPinned -> viewModel.toggleChatPinned(chatId, isPinned) },
@@ -789,6 +790,7 @@ private fun AuthenticatedUserCard(
     onSendPhoto: (String) -> Unit,
     onSendVideo: (String) -> Unit,
     onSendDocument: (String) -> Unit,
+    onSendAudio: (String) -> Unit,
     onDownloadMedia: (Int) -> Unit,
     onRefreshChats: () -> Unit,
     onToggleChatPinned: (Long, Boolean) -> Unit,
@@ -941,7 +943,7 @@ private fun AuthenticatedUserCard(
                         destination
                     }
                 }
-                if (copiedFile != null) onSendDocument(copiedFile.absolutePath)
+                if (copiedFile != null) onSendAudio(copiedFile.absolutePath)
             }
         }
     }

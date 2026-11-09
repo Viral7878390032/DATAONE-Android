@@ -75,6 +75,7 @@ interface TelegramRepository {
     suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit>
     suspend fun sendVideoMessage(chatId: Long, path: String, caption: String): Result<Unit>
     suspend fun sendDocumentMessage(chatId: Long, path: String, caption: String): Result<Unit>
+    suspend fun sendAudioMessage(chatId: Long, path: String, caption: String): Result<Unit>
 
     suspend fun requestMediaDownload(fileId: Int): Result<Unit>
 

@@ -1663,48 +1663,46 @@ private fun AuthenticatedUserCard(
                                         fontSize = 11.sp,
                                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
                                     )
-                                    if (selected.mediaType == "photo") {
-                                        val imageOptions = android.graphics.BitmapFactory.Options().apply {
-                                            inJustDecodeBounds = true
+                                    val mediaDimensionsAndDuration = when (selected.mediaType) {
+                                        "photo" -> {
+                                            val options = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                                            android.graphics.BitmapFactory.decodeFile(mediaFile.absolutePath, options)
+                                            Triple(options.outWidth, options.outHeight, 0L)
                                         }
-                                        android.graphics.BitmapFactory.decodeFile(mediaFile.absolutePath, imageOptions)
-                                        if (imageOptions.outWidth > 0 && imageOptions.outHeight > 0) {
-                                            Text(
-                                                text = "Resolution · ${imageOptions.outWidth} × ${imageOptions.outHeight}",
-                                                color = TextSecondary,
-                                                fontSize = 11.sp,
-                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    } else if (selected.mediaType == "video") {
-                                        val retriever = android.media.MediaMetadataRetriever()
-                                        try {
-                                            retriever.setDataSource(mediaFile.absolutePath)
-                                            val width = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
-                                            val height = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
-                                            val durationMs = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                                            if (width > 0 && height > 0) {
-                                                Text(
-                                                    text = "Resolution · $width × $height",
-                                                    color = TextSecondary,
-                                                    fontSize = 11.sp,
-                                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
+                                        "video" -> {
+                                            val retriever = android.media.MediaMetadataRetriever()
+                                            try {
+                                                retriever.setDataSource(mediaFile.absolutePath)
+                                                val width = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+                                                val height = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+                                                val duration = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+                                                Triple(width, height, duration)
+                                            } catch (_: Exception) {
+                                                Triple(0, 0, 0L)
+                                            } finally {
+                                                retriever.release()
                                             }
-                                            if (durationMs > 0L) {
-                                                val totalSeconds = durationMs / 1000L
-                                                val durationLabel = String.format(Locale.getDefault(), "%d:%02d", totalSeconds / 60L, totalSeconds % 60L)
-                                                Text(
-                                                    text = "Duration · $durationLabel",
-                                                    color = TextSecondary,
-                                                    fontSize = 11.sp,
-                                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        } catch (_: Exception) {
-                                        } finally {
-                                            retriever.release()
                                         }
+                                        else -> Triple(0, 0, 0L)
+                                    }
+                                    val (mediaWidth, mediaHeight, mediaDurationMs) = mediaDimensionsAndDuration
+                                    if (mediaWidth > 0 && mediaHeight > 0) {
+                                        Text(
+                                            text = "Resolution · $mediaWidth × $mediaHeight",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                    if (selected.mediaType == "video" && mediaDurationMs > 0L) {
+                                        val totalSeconds = mediaDurationMs / 1000L
+                                        val durationLabel = String.format(Locale.getDefault(), "%d:%02d", totalSeconds / 60L, totalSeconds % 60L)
+                                        Text(
+                                            text = "Duration · $durationLabel",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                                        )
                                     }
                                 }
                             }

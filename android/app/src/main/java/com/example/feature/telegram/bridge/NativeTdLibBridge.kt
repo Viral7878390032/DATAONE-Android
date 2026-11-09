@@ -264,6 +264,11 @@ class NativeTdLibBridge : TelegramClientBridge {
                                 val chat = sendRequest(TdApi.GetChat(id)) as TdApi.Chat
                                 val photoFile = chat.photo?.small
                                 val photoLocal = photoFile?.local
+                                val presence = when (val type = chat.type) {
+                                    is TdApi.ChatTypePrivate -> userPresence(type.userId)
+                                    is TdApi.ChatTypeSecret -> userPresence(type.userId)
+                                    else -> null
+                                }
                                 val completedPhotoPath = photoLocal?.let { local ->
                                     if (local.isDownloadingCompleted && local.path.isNotBlank()) local.path else null
                                 }
@@ -279,7 +284,9 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     isMuted = chat.notificationSettings.muteFor > 0,
                                     unreadMentionCount = chat.unreadMentionCount,
                                     photoFileId = photoFile?.id ?: 0,
-                                    photoFilePath = completedPhotoPath
+                                    photoFilePath = completedPhotoPath,
+                                    presenceText = presence?.first,
+                                    isOnline = presence?.second == true
                                 ).also {
                                     if (photoFile != null && photoLocal?.isDownloadingCompleted != true) {
                                         runCatching { sendRequest(TdApi.DownloadFile(photoFile.id, 16, 0, 0, false)) }
@@ -647,6 +654,31 @@ class NativeTdLibBridge : TelegramClientBridge {
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true
         )
+    }
+
+    private suspend fun userPresence(userId: Long): Pair<String, Boolean>? = try {
+        val user = sendRequest(TdApi.GetUser(userId)) as TdApi.User
+        when (val status = user.status) {
+            is TdApi.UserStatusOnline -> "online" to true
+            is TdApi.UserStatusOffline -> {
+                val seconds = (System.currentTimeMillis() / 1000L) - status.wasOnline
+                val label = when {
+                    seconds < 60 -> "last seen just now"
+                    seconds < 3600 -> "last seen ${seconds / 60} min ago"
+                    seconds < 86400 -> "last seen ${seconds / 3600} hr ago"
+                    seconds < 604800 -> "last seen ${seconds / 86400} days ago"
+                    else -> "last seen a while ago"
+                }
+                label to false
+            }
+            is TdApi.UserStatusRecently -> "last seen recently" to false
+            is TdApi.UserStatusLastWeek -> "last seen within a week" to false
+            is TdApi.UserStatusLastMonth -> "last seen within a month" to false
+            else -> null
+        }
+    } catch (error: Throwable) {
+        Log.d(tag, "Could not load Telegram presence for user $userId", error)
+        null
     }
 
     private fun updateMessageFile(file: TdApi.File) {

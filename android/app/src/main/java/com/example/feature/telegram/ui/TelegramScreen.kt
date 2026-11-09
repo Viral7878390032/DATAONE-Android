@@ -1193,14 +1193,15 @@ private fun AuthenticatedUserCard(
                                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         if (chat.isPinned) Text("📌", fontSize = 11.sp, modifier = Modifier.padding(end = 5.dp))
                                         Text(chat.title, modifier = Modifier.weight(1f), color = if (chat.unreadCount > 0 || chat.isMarkedAsUnread) Color.White else TextPrimary, fontWeight = if (chat.unreadCount > 0 || chat.isMarkedAsUnread) FontWeight.Bold else FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1)
+                                        if (chat.isOnline) Text("●", color = Color(0xFF35C875), fontSize = 10.sp, modifier = Modifier.padding(end = 5.dp))
                                         if (chat.isMuted) Text("🔕", fontSize = 12.sp, modifier = Modifier.padding(end = 5.dp))
                                         if (chat.lastMessageDate > 0) Text(formatTelegramChatTime(chat.lastMessageDate), color = TextMuted, fontSize = 11.sp)
                                     }
                                     Spacer(modifier = Modifier.height(5.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            chat.lastMessage.ifBlank { " " },
-                                            color = TextSecondary,
+                                            chat.presenceText ?: chat.lastMessage.ifBlank { " " },
+                                            color = if (chat.isOnline) Color(0xFF35C875) else TextSecondary,
                                             fontSize = 13.sp,
                                             maxLines = 1,
                                             modifier = Modifier.weight(1f)

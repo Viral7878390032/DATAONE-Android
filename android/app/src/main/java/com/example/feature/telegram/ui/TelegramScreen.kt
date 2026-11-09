@@ -278,6 +278,7 @@ fun TelegramScreen(
                         messageDraft = uiState.messageDraft,
                         onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
                         onSendMessage = { replyToId -> viewModel.sendMessage(replyToId) },
+                        onForwardMessage = { fromChat, message, toChat -> viewModel.forwardMessage(fromChat, message, toChat) },
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
@@ -778,6 +779,7 @@ private fun AuthenticatedUserCard(
     messageDraft: String,
     onMessageDraftChange: (String) -> Unit,
     onSendMessage: (Long?) -> Unit,
+    onForwardMessage: (Long, Long, Long) -> Unit,
     onSendPhoto: (String) -> Unit,
     onSendVideo: (String) -> Unit,
     onSendDocument: (String) -> Unit,
@@ -814,6 +816,28 @@ private fun AuthenticatedUserCard(
     var showConversationSearch by remember(selectedChatId) { mutableStateOf(false) }
     val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
     var replyTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    var forwardTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    if (forwardTarget != null) {
+        AlertDialog(
+            onDismissRequest = { forwardTarget = null },
+            title = { Text("Forward message to") },
+            text = {
+                Column(modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+                    chats.filter { it.id != selectedChatId }.forEach { destination ->
+                        TextButton(onClick = {
+                            val message = forwardTarget
+                            val sourceChat = selectedChatId
+                            if (message != null && sourceChat != null) onForwardMessage(sourceChat, message.id, destination.id)
+                            forwardTarget = null
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text(destination.title, color = TextPrimary)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { forwardTarget = null }) { Text("Cancel") } }
+        )
+    }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             coroutineScope.launch {
@@ -1143,6 +1167,10 @@ private fun AuthenticatedUserCard(
                                                 onClick = { replyTarget = message },
                                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                                             ) { Text("Reply", color = TelegramBlue, fontSize = 11.sp) }
+                                            TextButton(
+                                                onClick = { forwardTarget = message },
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                            ) { Text("Forward", color = TelegramBlue, fontSize = 11.sp) }
                                         }
                                         if (message.text.isNotBlank()) {
                                             Row(

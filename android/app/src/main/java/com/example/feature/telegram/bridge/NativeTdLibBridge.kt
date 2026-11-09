@@ -369,6 +369,14 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
     }
 
+    override suspend fun forwardMessage(fromChatId: Long, messageId: Long, toChatId: Long): Result<Unit> = try {
+        require(fromChatId != 0L && toChatId != 0L && messageId != 0L) { "Select a valid message and destination chat." }
+        sendRequest(TdApi.ForwardMessages(toChatId, fromChatId, longArrayOf(messageId), null, false, false))
+        refreshChats()
+        if (selectedChatId == toChatId) openChat(toChatId)
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The selected photo could not be opened." }

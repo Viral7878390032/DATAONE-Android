@@ -214,6 +214,13 @@ class TelegramViewModel(
         }
     }
 
+    fun forwardMessage(fromChatId: Long, messageId: Long, toChatId: Long) {
+        viewModelScope.launch {
+            val result = repository.forwardMessage(fromChatId, messageId, toChatId)
+            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
     fun sendMessage(replyToMessageId: Long? = null) {
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()

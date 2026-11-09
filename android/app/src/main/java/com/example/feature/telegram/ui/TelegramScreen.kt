@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -1588,7 +1589,7 @@ private fun AuthenticatedUserCard(
                     }
                 if (selectedSharedMediaMessage != null) {
                     val selected = selectedSharedMediaMessage!!
-                    val galleryItems = filteredMessages.filter { it.mediaType == "photo" || it.mediaType == "video" }
+                    val galleryItems = filteredMessages.filter { it.mediaType == "photo" || it.mediaType == "video" }.sortedByDescending { it.date }
                     val selectedIndex = galleryItems.indexOfFirst { it.id == selected.id }
                     Dialog(onDismissRequest = { selectedSharedMediaMessage = null }) {
                         Column(
@@ -1781,6 +1782,10 @@ private fun SharedMediaGalleryGrid(
         }
         return
     }
+    val sortedMessages = messages.sortedByDescending { it.date }
+    val groupedMessages = sortedMessages.groupBy { message ->
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(message.date * 1000L))
+    }
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize(),
@@ -1788,62 +1793,80 @@ private fun SharedMediaGalleryGrid(
         horizontalArrangement = Arrangement.spacedBy(5.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        items(messages, key = { it.id }) { message ->
-            val thumbnailPath = message.previewFilePath ?: message.mediaFilePath
-            val thumbnail by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-                initialValue = null,
-                key1 = thumbnailPath
-            ) {
-                value = withContext(Dispatchers.IO) {
-                    thumbnailPath?.takeIf { it.isNotBlank() }
-                        ?.let { runCatching { BitmapFactory.decodeFile(it)?.asImageBitmap() }.getOrNull() }
+        groupedMessages.forEach { (dayKey, dayMessages) ->
+            item(span = { GridItemSpan(maxLineSpan) }, key = "day-$dayKey") {
+                val dayDate = Date(dayMessages.first().date * 1000L)
+                val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val yesterday = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(System.currentTimeMillis() - 24L * 60L * 60L * 1000L))
+                val label = when (dayKey) {
+                    today -> "Today"
+                    yesterday -> "Yesterday"
+                    else -> SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()).format(dayDate)
                 }
+                Text(
+                    text = label,
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth().padding(start = 5.dp, top = 12.dp, bottom = 7.dp)
+                )
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(116.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(SurfaceCard)
-                    .border(1.dp, BorderHairline, RoundedCornerShape(10.dp))
-                    .clickable { onSelect(message) },
-                contentAlignment = Alignment.Center
-            ) {
-                if (thumbnail != null) {
-                    Image(
-                        bitmap = thumbnail!!,
-                        contentDescription = if (message.mediaType == "video") "Shared video thumbnail" else "Shared photo",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = if (message.mediaType == "video") Icons.Default.VideoLibrary else Icons.Default.Image,
-                            contentDescription = null,
-                            tint = TelegramBlue,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Text(
-                            if (message.isMediaDownloading) "Loading…" else "Preview",
-                            color = TextSecondary,
-                            fontSize = 10.sp
-                        )
+            items(dayMessages, key = { it.id }) { message ->
+                val thumbnailPath = message.previewFilePath ?: message.mediaFilePath
+                val thumbnail by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+                    initialValue = null,
+                    key1 = thumbnailPath
+                ) {
+                    value = withContext(Dispatchers.IO) {
+                        thumbnailPath?.takeIf { it.isNotBlank() }
+                            ?.let { runCatching { BitmapFactory.decodeFile(it)?.asImageBitmap() }.getOrNull() }
                     }
                 }
-                if (message.mediaType == "video") {
-                    Box(
-                        modifier = Modifier.align(Alignment.Center).size(30.dp)
-                            .clip(CircleShape).background(Color(0xB9000000)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("▶", color = Color.White, fontSize = 13.sp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(116.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(SurfaceCard)
+                        .border(1.dp, BorderHairline, RoundedCornerShape(10.dp))
+                        .clickable { onSelect(message) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (thumbnail != null) {
+                        Image(
+                            bitmap = thumbnail!!,
+                            contentDescription = if (message.mediaType == "video") "Shared video thumbnail" else "Shared photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = if (message.mediaType == "video") Icons.Default.VideoLibrary else Icons.Default.Image,
+                                contentDescription = null,
+                                tint = TelegramBlue,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Text(
+                                if (message.isMediaDownloading) "Loading…" else "Preview",
+                                color = TextSecondary,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                    if (message.mediaType == "video") {
+                        Box(
+                            modifier = Modifier.align(Alignment.Center).size(30.dp)
+                                .clip(CircleShape).background(Color(0xB9000000)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("▶", color = Color.White, fontSize = 13.sp)
+                        }
                     }
                 }
             }
         }
-    }
-}
+    }}
 
 @Composable
 private fun TelegramDocumentContent(

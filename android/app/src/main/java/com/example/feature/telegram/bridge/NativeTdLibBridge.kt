@@ -465,8 +465,8 @@ class NativeTdLibBridge : TelegramClientBridge {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The voice recording could not be opened." }
         require(durationSeconds > 0) { "Record a voice message before sending." }
-        val content = TdApi.InputMessageVoice()
-        content.voice = TdApi.InputFileLocal(path)
+        val content = TdApi.InputMessageVoiceNote()
+        content.voiceNote = TdApi.InputFileLocal(path)
         content.duration = durationSeconds
         content.waveform = ByteArray(0)
         content.caption = TdApi.FormattedText("", emptyArray())

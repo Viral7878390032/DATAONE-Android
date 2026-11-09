@@ -734,11 +734,9 @@ class NativeTdLibBridge : TelegramClientBridge {
 
     private fun toTelegramMessage(message: TdApi.Message): TelegramMessage {
         val messageContent = message.content
-        val photoFile = (messageContent as? TdApi.MessagePhoto)
-            ?.photo
-            ?.sizes
-            ?.maxByOrNull { size -> size.width.toLong() * size.height.toLong() }
-            ?.photo
+        val photoSizes = (messageContent as? TdApi.MessagePhoto)?.photo?.sizes.orEmpty()
+        val photoFile = photoSizes.maxByOrNull { size -> size.width.toLong() * size.height.toLong() }?.photo
+        val previewFile = photoSizes.minByOrNull { size -> size.width.toLong() * size.height.toLong() }?.photo
         val audioFile = when (val content = messageContent) {
             is TdApi.MessageAudio -> content.audio.audio
             is TdApi.MessageVoiceNote -> content.voiceNote.voice
@@ -778,7 +776,9 @@ class NativeTdLibBridge : TelegramClientBridge {
             mediaFileId = photoFile?.id ?: videoFile?.id ?: documentFile?.id ?: audioFile?.id,
             mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
-            isMediaDownloading = localFile?.isDownloadingActive == true
+            isMediaDownloading = localFile?.isDownloadingActive == true,
+            previewFileId = previewFile?.id,
+            previewFilePath = previewFile?.local?.path?.takeIf { previewFile.local.isDownloadingCompleted && it.isNotBlank() }
         )
     }
 
@@ -817,13 +817,11 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
         _messages.update { current ->
             current.map { message ->
-                if (message.mediaFileId == file.id) {
-                    message.copy(
-                        mediaFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() },
-                        isMediaDownloaded = file.local.isDownloadingCompleted,
-                        isMediaDownloading = file.local.isDownloadingActive
-                    )
-                } else message
+                when {
+                    message.mediaFileId == file.id -> message.copy(mediaFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() }, isMediaDownloaded = file.local.isDownloadingCompleted, isMediaDownloading = file.local.isDownloadingActive)
+                    message.previewFileId == file.id -> message.copy(previewFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() })
+                    else -> message
+                }
             }
         }
     }

@@ -1446,6 +1446,101 @@ private fun AuthenticatedUserCard(
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                     ) {
                         items(filteredMessages, key = { it.id }) { message ->
+                            var showMessageMenu by remember(message.id) { mutableStateOf(false) }
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start
+                            ) {
+                                Surface(
+                                    color = if (message.isOutgoing) Color(0xFF1B526F) else Color(0xFF202B38),
+                                    shape = RoundedCornerShape(
+                                        topStart = 18.dp, topEnd = 18.dp,
+                                        bottomStart = if (message.isOutgoing) 18.dp else 5.dp,
+                                        bottomEnd = if (message.isOutgoing) 5.dp else 18.dp
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        0.5.dp,
+                                        if (message.isOutgoing) Color(0xFF286887) else Color(0xFF2A3949)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth(0.84f)
+                                ) {
+                                    Column(modifier = Modifier.padding(7.dp)) {
+                                        if (message.isPinned) {
+                                            Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp))
+                                        }
+                                        when (message.mediaType) {
+                                            "photo" -> TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
+                                            "video" -> TelegramVideoContent(message = message, onDownloadMedia = onDownloadMedia)
+                                            "audio", "voice" -> TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
+                                            "document" -> Row(
+                                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                                                    .background(SurfaceCard).padding(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(Icons.Default.AttachFile, contentDescription = "File", tint = TelegramBlue)
+                                                Column(Modifier.weight(1f).padding(start = 9.dp)) {
+                                                    Text("File attachment", color = TextPrimary, fontWeight = FontWeight.Medium)
+                                                    Text(if (message.isMediaDownloading) "Downloading…" else "Tap download to open",
+                                                        color = TextSecondary, fontSize = 11.sp)
+                                                }
+                                                TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) },
+                                                    enabled = message.mediaFileId != null && !message.isMediaDownloading) {
+                                                    Text("Download", color = TelegramBlue)
+                                                }
+                                            }
+                                        }
+                                        if (message.text.isNotBlank()) {
+                                            Text(
+                                                text = message.text,
+                                                color = TextPrimary,
+                                                fontSize = 14.sp,
+                                                lineHeight = 20.sp,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 5.dp)
+                                            )
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(start = 5.dp, end = 3.dp, top = 1.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            Text(formatTelegramChatTime(message.date), color = TextSecondary.copy(alpha = 0.85f), fontSize = 10.sp)
+                                            if (message.isOutgoing) {
+                                                Text("  ✓✓", color = Color(0xFF79C9F0), fontSize = 11.sp)
+                                            }
+                                            Box {
+                                                IconButton(onClick = { showMessageMenu = true }, modifier = Modifier.size(27.dp)) {
+                                                    Icon(Icons.Default.MoreVert, contentDescription = "Message actions",
+                                                        tint = TextSecondary, modifier = Modifier.size(17.dp))
+                                                }
+                                                DropdownMenu(expanded = showMessageMenu, onDismissRequest = { showMessageMenu = false }) {
+                                                    DropdownMenuItem(text = { Text("Reply") }, onClick = { replyTarget = message; showMessageMenu = false })
+                                                    DropdownMenuItem(text = { Text("Forward") }, onClick = { forwardTarget = message; showMessageMenu = false })
+                                                    DropdownMenuItem(text = { Text(if (message.isPinned) "Unpin message" else "Pin message") },
+                                                        onClick = { onToggleMessagePinned(message.id, message.isPinned); showMessageMenu = false })
+                                                    DropdownMenuItem(text = { Text("👍 React") }, onClick = { onReactMessage(message.id, "👍"); showMessageMenu = false })
+                                                    if (message.isOutgoing && message.mediaType == null && message.text.isNotBlank()) {
+                                                        DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                                                            editTarget = message; editDraft = message.text; showMessageMenu = false
+                                                        })
+                                                    }
+                                                    DropdownMenuItem(text = { Text("Delete", color = Color(0xFFFF7777)) },
+                                                        onClick = { deleteTarget = message; showMessageMenu = false })
+                                                    if (message.text.isNotBlank()) {
+                                                        DropdownMenuItem(text = { Text("Copy") }, onClick = {
+                                                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                            clipboard.setPrimaryClip(ClipData.newPlainText("Telegram message", message.text))
+                                                            Toast.makeText(context, "Message copied", Toast.LENGTH_SHORT).show()
+                                                            showMessageMenu = false
+                                                        })
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }) { message ->
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                                 horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start

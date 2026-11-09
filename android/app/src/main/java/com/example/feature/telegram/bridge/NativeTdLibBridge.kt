@@ -787,7 +787,8 @@ class NativeTdLibBridge : TelegramClientBridge {
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true,
             previewFileId = previewFile?.id ?: videoPreviewFile?.id,
-            previewFilePath = (previewFile?.local ?: videoPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } }
+            previewFilePath = (previewFile?.local ?: videoPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
+            mediaFileName = documentFile?.fileName
         )
     }
 

@@ -1515,22 +1515,7 @@ private fun AuthenticatedUserCard(
                                             "photo" -> TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
                                             "video" -> TelegramVideoContent(message = message, onDownloadMedia = onDownloadMedia)
                                             "audio", "voice" -> TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
-                                            "document" -> Row(
-                                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                                                    .background(SurfaceCard).padding(10.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(Icons.Default.AttachFile, contentDescription = "File", tint = TelegramBlue)
-                                                Column(Modifier.weight(1f).padding(start = 9.dp)) {
-                                                    Text("File attachment", color = TextPrimary, fontWeight = FontWeight.Medium)
-                                                    Text(if (message.isMediaDownloading) "Downloading…" else "Tap download to open",
-                                                        color = TextSecondary, fontSize = 11.sp)
-                                                }
-                                                TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) },
-                                                    enabled = message.mediaFileId != null && !message.isMediaDownloading) {
-                                                    Text("Download", color = TelegramBlue)
-                                                }
-                                            }
+                                            "document" -> TelegramDocumentContent(message = message, onDownloadMedia = onDownloadMedia)
                                         }
                                         if (message.text.isNotBlank()) {
                                             Text(
@@ -1668,6 +1653,147 @@ private fun AuthenticatedUserCard(
         }
     }
 }
+
+@Composable
+private fun TelegramDocumentContent(
+    message: com.example.feature.telegram.model.TelegramMessage,
+    onDownloadMedia: (Int) -> Unit
+) {
+    val context = LocalContext.current
+    val fileName = message.mediaFileName?.takeIf { it.isNotBlank() }
+        ?: message.mediaFilePath?.let { java.io.File(it).name }
+        ?: "Telegram document"
+    val extension = fileName.substringAfterLast('.', "").uppercase().ifBlank { "FILE" }
+    val fileSize = message.mediaFilePath?.let { path ->
+        runCatching { java.io.File(path).length() }.getOrNull()
+    } ?: 0L
+    val sizeLabel = if (fileSize > 0) {
+        if (fileSize >= 1024L * 1024L) String.format("%.1f MB", fileSize / (1024f * 1024f))
+        else String.format("%.0f KB", fileSize / 1024f)
+    } else "Telegram file"
+
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+            .background(SurfaceCard).border(1.dp, BorderHairline, RoundedCornerShape(14.dp))
+            .padding(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp))
+                    .background(TelegramBlue.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.AttachFile, contentDescription = "Document", tint = TelegramBlue)
+            }
+            Column(Modifier.weight(1f).padding(start = 11.dp)) {
+                Text(fileName, color = TextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                Text("$extension  •  $sizeLabel", color = TextSecondary, fontSize = 11.sp)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        if (message.isMediaDownloading) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = TelegramBlue, strokeWidth = 2.dp)
+                Text("Downloading file…", color = TextSecondary, fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 8.dp))
+            }
+        } else if (!message.mediaFilePath.isNullOrBlank()) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { openOrShareTelegramDocument(context, message.mediaFilePath, fileName, "open") }) {
+                    Text("Open", color = TelegramBlue)
+                }
+                TextButton(onClick = { openOrShareTelegramDocument(context, message.mediaFilePath, fileName, "share") }) {
+                    Text("Share", color = TelegramBlue)
+                }
+                TextButton(onClick = { openOrShareTelegramDocument(context, message.mediaFilePath, fileName, "save") }) {
+                    Text("Save", color = TelegramBlue)
+                }
+            }
+        } else {
+            Button(
+                onClick = { message.mediaFileId?.let(onDownloadMedia) },
+                enabled = message.mediaFileId != null,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
+            ) {
+                Text("Download file")
+            }
+        }
+    }
+}
+
+private fun openOrShareTelegramDocument(
+    context: android.content.Context,
+    path: String,
+    displayName: String,
+    action: String
+) {
+    try {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Toast.makeText(context, "File actions require Android 10 or newer.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val source = java.io.File(path)
+        if (!source.exists() || !source.isFile) {
+            Toast.makeText(context, "File is not available yet.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val extension = displayName.substringAfterLast('.', "").lowercase()
+        val mimeType = when (extension) {
+            "pdf" -> "application/pdf"
+            "txt" -> "text/plain"
+            "doc" -> "application/msword"
+            "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            "xls" -> "application/vnd.ms-excel"
+            "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            "ppt" -> "application/vnd.ms-powerpoint"
+            "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            "zip" -> "application/zip"
+            "rar" -> "application/vnd.rar"
+            "7z" -> "application/x-7z-compressed"
+            "csv" -> "text/csv"
+            "json" -> "application/json"
+            else -> "application/octet-stream"
+        }
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/DATAONE")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("Could not prepare file")
+        resolver.openOutputStream(uri)?.use { output ->
+            source.inputStream().use { input -> input.copyTo(output) }
+        } ?: throw IllegalStateException("Could not copy file")
+        val ready = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+        resolver.update(uri, ready, null, null)
+
+        when (action) {
+            "share" -> {
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = mimeType
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    clipData = android.content.ClipData.newUri(resolver, displayName, uri)
+                }
+                context.startActivity(android.content.Intent.createChooser(intent, "Share file"))
+            }
+            "open" -> {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, mimeType)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(android.content.Intent.createChooser(intent, "Open file with"))
+            }
+            else -> Toast.makeText(context, "Saved to Downloads/DATAONE", Toast.LENGTH_SHORT).show()
+        }
+    } catch (error: Exception) {
+        Toast.makeText(context, error.message ?: "Unable to process file.", Toast.LENGTH_LONG).show()
+    }
+}
+
 @Composable
 private fun TelegramAudioContent(
     message: com.example.feature.telegram.model.TelegramMessage,

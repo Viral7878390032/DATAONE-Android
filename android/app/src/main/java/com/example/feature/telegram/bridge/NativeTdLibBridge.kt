@@ -341,7 +341,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             }
             is TdApi.ChatTypeSecret -> {
                 val user = sendRequest(TdApi.GetUser(type.userId)) as TdApi.User
-                username = user.username.orEmpty()
+                username = user.usernames?.activeUsernames?.firstOrNull().orEmpty()
                 phoneNumber = user.phoneNumber.orEmpty()
                 "Secret chat"
             }

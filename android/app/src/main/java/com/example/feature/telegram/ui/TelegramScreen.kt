@@ -1280,7 +1280,14 @@ private fun AuthenticatedUserCard(
                         items(filteredChats, key = { it.id }) { chat ->
                             var showChatActions by remember(chat.id) { mutableStateOf(false) }
                             Row(
-                                modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(SurfaceDark)
+                                    .border(1.dp, BorderHairline.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                    .clickable { onOpenChat(chat.id) }
+                                    .padding(horizontal = 12.dp, vertical = 11.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val chatAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, chat.photoFilePath) {

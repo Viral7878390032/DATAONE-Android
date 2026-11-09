@@ -276,6 +276,40 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.failure(error)
     }
 
+    override suspend fun renameGroupChat(chatId: Long, title: String): Result<Unit> = try {
+        val cleanTitle = title.trim()
+        require(chatId != 0L && cleanTitle.isNotBlank() && cleanTitle.length <= 128) { "Enter a group name between 1 and 128 characters." }
+        sendRequest(TdApi.SetChatTitle(chatId, cleanTitle))
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun addGroupMembers(chatId: Long, userIds: List<Long>): Result<Unit> = try {
+        val ids = userIds.distinct().filter { it != 0L }
+        require(chatId != 0L && ids.isNotEmpty()) { "Select at least one contact to add." }
+        sendRequest(TdApi.AddChatMembers(chatId, ids.toLongArray(), 0))
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun removeGroupMember(chatId: Long, userId: Long): Result<Unit> = try {
+        require(chatId != 0L && userId != 0L) { "Select a valid group member." }
+        sendRequest(TdApi.RemoveChatMember(chatId, userId))
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun leaveGroupChat(chatId: Long): Result<Unit> = try {
+        require(chatId != 0L) { "Select a group first." }
+        sendRequest(TdApi.LeaveChat(chatId))
+        if (selectedChatId == chatId) {
+            selectedChatId = null
+            _messages.value = emptyList()
+        }
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
     override suspend fun openPrivateChat(userId: Long): Result<Long> = try {
         require(userId != 0L) { "Choose a valid Telegram contact." }
         val chat = sendRequest(TdApi.CreatePrivateChat(userId, false)) as TdApi.Chat

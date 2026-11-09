@@ -60,6 +60,10 @@ interface TelegramRepository {
     suspend fun refreshChats(): Result<Unit>
     suspend fun searchContacts(query: String): Result<List<TelegramUser>>
     suspend fun createGroupChat(title: String, userIds: List<Long>): Result<Long>
+    suspend fun renameGroupChat(chatId: Long, title: String): Result<Unit>
+    suspend fun addGroupMembers(chatId: Long, userIds: List<Long>): Result<Unit>
+    suspend fun removeGroupMember(chatId: Long, userId: Long): Result<Unit>
+    suspend fun leaveGroupChat(chatId: Long): Result<Unit>
     suspend fun openPrivateChat(userId: Long): Result<Long>
     suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit>
     suspend fun toggleChatMarkedUnread(chatId: Long, isMarkedAsUnread: Boolean): Result<Unit>

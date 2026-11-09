@@ -311,6 +311,9 @@ fun TelegramScreen(
                         onSearchMessages = { viewModel.searchChatMessages(it) },
                         onLoadSharedMedia = { viewModel.loadSharedMedia(it) },
                         onLoadChatDetails = { viewModel.loadChatDetails(it) },
+                        onRenameGroup = { id, title -> viewModel.renameGroupChat(id, title) },
+                        onAddGroupMembers = { id, ids -> viewModel.addGroupMembers(id, ids) },
+                        onLeaveGroup = { viewModel.leaveGroupChat(it) },
                         chatDetails = uiState.chatDetails,
                         isLoadingChatDetails = uiState.isLoadingChatDetails,
                         onCloseChat = { viewModel.closeChat() },
@@ -828,6 +831,9 @@ private fun AuthenticatedUserCard(
     onSearchMessages: (String) -> Unit,
     onLoadSharedMedia: (String) -> Unit,
     onLoadChatDetails: (Long) -> Unit,
+    onRenameGroup: (Long, String) -> Unit,
+    onAddGroupMembers: (Long, List<Long>) -> Unit,
+    onLeaveGroup: (Long) -> Unit,
     chatDetails: com.example.feature.telegram.model.TelegramChatDetails?,
     isLoadingChatDetails: Boolean,
     onCloseChat: () -> Unit,
@@ -873,6 +879,10 @@ private fun AuthenticatedUserCard(
     var contactSearchQuery by remember { mutableStateOf("") }
     var showCreateGroupDialog by remember { mutableStateOf(false) }
     var groupTitle by remember { mutableStateOf("") }
+    var groupTitleEdit by remember { mutableStateOf("") }
+    var showAddGroupMembersDialog by remember { mutableStateOf(false) }
+    var selectedAdditionalMembers by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showLeaveGroupConfirmation by remember { mutableStateOf(false) }
     var selectedGroupMembers by remember { mutableStateOf(setOf<Long>()) }
     LaunchedEffect(showNewChatDialog) { if (showNewChatDialog) onSearchContacts("") }
     LaunchedEffect(contactSearchQuery, showNewChatDialog) {
@@ -1011,6 +1021,12 @@ private fun AuthenticatedUserCard(
                         Text("Username: " + if (details.username.isBlank()) "Not available" else "@${details.username}", color = TextPrimary)
                         Text("Phone: " + if (details.phoneNumber.isBlank()) "Not available" else details.phoneNumber, color = TextPrimary)
                         Text("Chat ID: ${details.chatId}", color = TextSecondary, fontSize = 12.sp)
+                        if (details.chatType == "Group" || details.chatType == "Supergroup") {
+                            OutlinedTextField(value = groupTitleEdit, onValueChange = { groupTitleEdit = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text("Group name") })
+                            TextButton(onClick = { onRenameGroup(details.chatId, groupTitleEdit); showChatDetails = false }, enabled = groupTitleEdit.isNotBlank() && groupTitleEdit != details.title) { Text("Save group name", color = TelegramBlue) }
+                            TextButton(onClick = { selectedAdditionalMembers = emptySet(); showAddGroupMembersDialog = true }) { Text("＋ Add members", color = TelegramBlue) }
+                            TextButton(onClick = { showLeaveGroupConfirmation = true }) { Text("Leave group", color = Color(0xFFFF7777)) }
+                        }
                     } else {
                         Text("Chat details are not available.", color = TextSecondary)
                     }
@@ -1024,6 +1040,55 @@ private fun AuthenticatedUserCard(
             dismissButton = {
                 TextButton(onClick = { showChatDetails = false }) { Text("Close") }
             }
+        )
+    }
+    if (showAddGroupMembersDialog) {
+        val currentGroupId = chatDetails?.chatId
+        AlertDialog(
+            onDismissRequest = { showAddGroupMembersDialog = false; selectedAdditionalMembers = emptySet() },
+            containerColor = SurfaceCard,
+            title = { Text("Add group members", color = TextPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = contactSearchQuery, onValueChange = { contactSearchQuery = it; onSearchContacts(it) }, modifier = Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("Search contacts") })
+                    if (isLoadingContacts) CircularProgressIndicator(color = TelegramBlue)
+                    else Column(Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
+                        contacts.forEach { contact ->
+                            Row(modifier = Modifier.fillMaxWidth().clickable {
+                                selectedAdditionalMembers = if (contact.id in selectedAdditionalMembers) selectedAdditionalMembers - contact.id else selectedAdditionalMembers + contact.id
+                            }.padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = contact.id in selectedAdditionalMembers, onCheckedChange = { checked ->
+                                    selectedAdditionalMembers = if (checked) selectedAdditionalMembers + contact.id else selectedAdditionalMembers - contact.id
+                                })
+                                Column {
+                                    Text(contact.displayName, color = TextPrimary)
+                                    Text(contact.handle, color = TextSecondary, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = {
+                if (currentGroupId != null && selectedAdditionalMembers.isNotEmpty()) onAddGroupMembers(currentGroupId, selectedAdditionalMembers.toList())
+                showAddGroupMembersDialog = false
+                selectedAdditionalMembers = emptySet()
+                contactSearchQuery = ""
+            }, enabled = selectedAdditionalMembers.isNotEmpty()) { Text("Add selected", color = TelegramBlue) } },
+            dismissButton = { TextButton(onClick = { showAddGroupMembersDialog = false }) { Text("Cancel") } }
+        )
+    }
+    if (showLeaveGroupConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showLeaveGroupConfirmation = false },
+            title = { Text("Leave group?") },
+            text = { Text("You may need an invitation to join this group again.") },
+            confirmButton = { TextButton(onClick = {
+                chatDetails?.chatId?.let(onLeaveGroup)
+                showLeaveGroupConfirmation = false
+                showChatDetails = false
+            }) { Text("Leave", color = Color(0xFFFF7777)) } },
+            dismissButton = { TextButton(onClick = { showLeaveGroupConfirmation = false }) { Text("Cancel") } }
         )
     }
         if (deleteTarget != null) AlertDialog(onDismissRequest = { deleteTarget = null }, title = { Text("Delete message?") }, text = { Text("Delete this message for everyone where Telegram permits?") }, confirmButton = { TextButton(onClick = { deleteTarget?.let { onDeleteMessage(it.id) }; deleteTarget = null }) { Text("Delete", color = Color(0xFFFF7777)) } }, dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } })
@@ -1351,7 +1416,8 @@ private fun AuthenticatedUserCard(
                     Column(
                         modifier = Modifier.weight(1f).clickable {
                             showChatDetails = true
-                            selectedChatId?.let(onLoadChatDetails)
+                            groupTitleEdit = activeChat?.title.orEmpty()
+                            selectedChatId?.let { onLoadChatDetails(it); onSearchContacts("") }
                         }
                     ) {
                         Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)

@@ -1723,6 +1723,19 @@ private fun AuthenticatedUserCard(
                                         Text("Copy caption", color = TelegramBlue)
                                     }
                                 }
+                                if (selected.text.isNotBlank()) {
+                                    TextButton(
+                                        onClick = {
+                                            val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                                type = "text/plain"
+                                                putExtra(android.content.Intent.EXTRA_TEXT, selected.text)
+                                            }
+                                            context.startActivity(android.content.Intent.createChooser(sendIntent, "Share caption"))
+                                        }
+                                    ) {
+                                        Text("Share caption", color = TelegramBlue)
+                                    }
+                                }
                                 selected.mediaFileName?.takeIf { it.isNotBlank() }?.let { fileName ->
                                     TextButton(
                                         onClick = {

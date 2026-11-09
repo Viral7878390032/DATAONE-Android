@@ -1723,6 +1723,17 @@ private fun AuthenticatedUserCard(
                                         Text("Copy caption", color = TelegramBlue)
                                     }
                                 }
+                                selected.mediaFileName?.takeIf { it.isNotBlank() }?.let { fileName ->
+                                    TextButton(
+                                        onClick = {
+                                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("Media filename", fileName))
+                                            Toast.makeText(context, "Filename copied", Toast.LENGTH_SHORT).show()
+                                        }
+                                    ) {
+                                        Text("Copy filename", color = TelegramBlue)
+                                    }
+                                }
                                 TextButton(
                                     onClick = {
                                         val mediaPath = selected.mediaFilePath

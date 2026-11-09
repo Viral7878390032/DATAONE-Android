@@ -2025,6 +2025,25 @@ private fun SharedMediaGalleryGrid(
                             ?.let { runCatching { BitmapFactory.decodeFile(it)?.asImageBitmap() }.getOrNull() }
                     }
                 }
+                val videoDurationLabel by produceState<String?>(null, thumbnailPath, message.mediaType) {
+                    value = if (message.mediaType == "video" && !thumbnailPath.isNullOrBlank()) {
+                        withContext(Dispatchers.IO) {
+                            val retriever = android.media.MediaMetadataRetriever()
+                            try {
+                                retriever.setDataSource(thumbnailPath)
+                                val durationMs = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+                                if (durationMs > 0L) {
+                                    val seconds = durationMs / 1000L
+                                    String.format(Locale.getDefault(), "%d:%02d", seconds / 60L, seconds % 60L)
+                                } else null
+                            } catch (_: Exception) {
+                                null
+                            } finally {
+                                runCatching { retriever.release() }
+                            }
+                        }
+                    } else null
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2064,6 +2083,18 @@ private fun SharedMediaGalleryGrid(
                             contentAlignment = Alignment.Center
                         ) {
                             Text("▶", color = Color.White, fontSize = 13.sp)
+                        }
+                        videoDurationLabel?.let { duration ->
+                            Text(
+                                text = duration,
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(5.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color(0xCC000000))
+                                    .padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
                         }
                     }
                 }

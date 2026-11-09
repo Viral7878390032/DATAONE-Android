@@ -1673,6 +1673,7 @@ private fun TelegramAudioContent(
     message: com.example.feature.telegram.model.TelegramMessage,
     onDownloadMedia: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     var isPlaying by remember(message.id) { mutableStateOf(false) }
     var player by remember(message.id) { mutableStateOf<MediaPlayer?>(null) }
 
@@ -1736,8 +1737,11 @@ private fun TelegramAudioContent(
                     if (message.mediaType == "voice") "Voice note" else "Audio file",
                     color = TextSecondary,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(start = 10.dp)
+                    modifier = Modifier.padding(start = 10.dp).weight(1f)
                 )
+                TextButton(onClick = { saveTelegramAudioToDownloads(context, message.mediaFilePath!!) }) {
+                    Text("Save", color = TelegramBlue)
+                }
             }
         } else {
             Button(
@@ -1748,6 +1752,47 @@ private fun TelegramAudioContent(
                 Text("Download ${if (message.mediaType == "voice") "voice message" else "audio"}")
             }
         }
+    }
+}
+
+private fun saveTelegramAudioToDownloads(context: android.content.Context, path: String) {
+    try {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Toast.makeText(context, "Saving audio requires Android 10 or newer.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val source = java.io.File(path)
+        if (!source.exists() || !source.isFile) {
+            Toast.makeText(context, "Audio file is not available yet.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val extension = source.extension.lowercase()
+        val mimeType = when (extension) {
+            "mp3" -> "audio/mpeg"
+            "m4a" -> "audio/mp4"
+            "ogg", "oga" -> "audio/ogg"
+            "wav" -> "audio/wav"
+            "flac" -> "audio/flac"
+            else -> "application/octet-stream"
+        }
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, source.name)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/DATAONE")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("Could not create download item")
+        resolver.openOutputStream(uri)?.use { output ->
+            source.inputStream().use { input -> input.copyTo(output) }
+        } ?: throw IllegalStateException("Could not write audio file")
+        values.clear()
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
+        Toast.makeText(context, "Audio saved to Downloads/DATAONE", Toast.LENGTH_SHORT).show()
+    } catch (error: Exception) {
+        Toast.makeText(context, error.message ?: "Unable to save audio.", Toast.LENGTH_LONG).show()
     }
 }
 

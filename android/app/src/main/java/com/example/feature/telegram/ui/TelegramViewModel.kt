@@ -120,6 +120,16 @@ class TelegramViewModel(
         }
     }
 
+    fun searchChatMessages(query: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch {
+            val result = repository.searchChatMessages(chatId, query)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Message search failed.") }
+            }
+        }
+    }
+
     fun loadOlderMessages() {
         val chatId = _uiState.value.selectedChatId ?: return
         viewModelScope.launch {

@@ -346,6 +346,26 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 
+    override suspend fun searchChatMessages(chatId: Long, query: String): Result<Unit> = try {
+        require(chatId != 0L) { "Select a Telegram chat before searching." }
+        val cleanQuery = query.trim()
+        if (cleanQuery.isBlank()) {
+            if (selectedChatId == chatId) openChat(chatId)
+        } else {
+            val request = TdApi.SearchChatMessages()
+            request.chatId = chatId
+            request.query = cleanQuery
+            request.fromMessageId = 0
+            request.offset = 0
+            request.limit = 100
+            val result = sendRequest(request) as TdApi.FoundChatMessages
+            if (selectedChatId == chatId) {
+                _messages.value = result.messages.reversed().map(::toTelegramMessage)
+            }
+        }
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
     override suspend fun loadOlderMessages(chatId: Long): Result<Unit> {
         if (chatId != selectedChatId || isLoadingOlderHistory || !hasMoreChatHistory) return Result.success(Unit)
         val oldestMessageId = _messages.value.firstOrNull()?.id ?: return Result.success(Unit)

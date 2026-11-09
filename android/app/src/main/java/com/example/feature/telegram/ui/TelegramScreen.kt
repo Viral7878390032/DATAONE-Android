@@ -302,6 +302,7 @@ fun TelegramScreen(
                         onToggleChatMuted = { chatId, muted -> viewModel.toggleChatMuted(chatId, muted) },
                         onOpenChat = { viewModel.openChat(it) },
                         onLoadOlderMessages = { viewModel.loadOlderMessages() },
+                        onSearchMessages = { viewModel.searchChatMessages(it) },
                         onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
                     )
@@ -809,6 +810,7 @@ private fun AuthenticatedUserCard(
     onToggleChatMuted: (Long, Boolean) -> Unit,
     onOpenChat: (Long) -> Unit,
     onLoadOlderMessages: () -> Unit,
+    onSearchMessages: (String) -> Unit,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -865,6 +867,12 @@ private fun AuthenticatedUserCard(
     )
     var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
     var showConversationSearch by remember(selectedChatId) { mutableStateOf(false) }
+    LaunchedEffect(selectedChatId, conversationSearchQuery) {
+        if (selectedChatId != null && showConversationSearch) {
+            kotlinx.coroutines.delay(350)
+            onSearchMessages(conversationSearchQuery)
+        }
+    }
     var showSharedMedia by remember(selectedChatId) { mutableStateOf(false) }
     val filteredMessages = messages.filter { message ->
         message.text.contains(conversationSearchQuery, ignoreCase = true) &&
@@ -1215,7 +1223,7 @@ private fun AuthenticatedUserCard(
                 } else {
                     val conversationListState = androidx.compose.foundation.lazy.rememberLazyListState()
                     LaunchedEffect(selectedChatId, conversationListState.firstVisibleItemIndex) {
-                        if (!showSharedMedia && conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
+                        if (!showSharedMedia && conversationSearchQuery.isBlank() && conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
                             onLoadOlderMessages()
                         }
                     }

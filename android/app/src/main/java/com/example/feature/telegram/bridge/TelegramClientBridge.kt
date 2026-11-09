@@ -82,6 +82,7 @@ interface TelegramClientBridge {
     suspend fun toggleChatMuted(chatId: Long, isMuted: Boolean): Result<Unit>
 
     suspend fun openChat(chatId: Long): Result<Unit>
+    suspend fun searchChatMessages(chatId: Long, query: String): Result<Unit>
     suspend fun loadOlderMessages(chatId: Long): Result<Unit>
     suspend fun forwardMessage(fromChatId: Long, messageId: Long, toChatId: Long): Result<Unit>
     suspend fun editTextMessage(chatId: Long, messageId: Long, newText: String): Result<Unit>

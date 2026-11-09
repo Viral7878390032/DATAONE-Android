@@ -282,6 +282,7 @@ fun TelegramScreen(
                         isLoadingContacts = uiState.isLoadingContacts,
                         onSearchContacts = { viewModel.searchContacts(it) },
                         onOpenPrivateChat = { viewModel.openPrivateChat(it) },
+                        onCreateGroupChat = { title, ids -> viewModel.createGroupChat(title, ids) },
                         messages = uiState.messages,
                         selectedChatId = uiState.selectedChatId,
                         isLoadingChats = uiState.isLoadingChats,
@@ -798,6 +799,7 @@ private fun AuthenticatedUserCard(
     isLoadingContacts: Boolean,
     onSearchContacts: (String) -> Unit,
     onOpenPrivateChat: (Long) -> Unit,
+    onCreateGroupChat: (String, List<Long>) -> Unit,
     messages: List<com.example.feature.telegram.model.TelegramMessage>,
     selectedChatId: Long?,
     isLoadingChats: Boolean,
@@ -868,6 +870,9 @@ private fun AuthenticatedUserCard(
     var chatSearchQuery by remember { mutableStateOf("") }
     var showNewChatDialog by remember { mutableStateOf(false) }
     var contactSearchQuery by remember { mutableStateOf("") }
+    var showCreateGroupDialog by remember { mutableStateOf(false) }
+    var groupTitle by remember { mutableStateOf("") }
+    var selectedGroupMembers by remember { mutableStateOf(setOf<Long>()) }
     LaunchedEffect(showNewChatDialog) { if (showNewChatDialog) onSearchContacts("") }
     LaunchedEffect(contactSearchQuery, showNewChatDialog) {
         if (showNewChatDialog) { kotlinx.coroutines.delay(300); onSearchContacts(contactSearchQuery) }
@@ -923,6 +928,45 @@ private fun AuthenticatedUserCard(
     var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editDraft by remember(selectedChatId) { mutableStateOf("") }
     var deleteTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    if (showCreateGroupDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateGroupDialog = false; groupTitle = ""; selectedGroupMembers = emptySet() },
+            containerColor = SurfaceCard,
+            title = { Text("Create group", color = TextPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(value = groupTitle, onValueChange = { groupTitle = it.take(128) }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text("Group name") })
+                    Text("Select at least 2 contacts", color = TextSecondary, fontSize = 12.sp)
+                    if (contacts.isEmpty()) Text("No contacts available. Load contacts first.", color = TextSecondary)
+                    else Column(Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
+                        contacts.forEach { contact ->
+                            Row(Modifier.fillMaxWidth().clickable {
+                                selectedGroupMembers = if (contact.id in selectedGroupMembers) selectedGroupMembers - contact.id else selectedGroupMembers + contact.id
+                            }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = contact.id in selectedGroupMembers, onCheckedChange = { checked ->
+                                    selectedGroupMembers = if (checked) selectedGroupMembers + contact.id else selectedGroupMembers - contact.id
+                                })
+                                Column {
+                                    Text(contact.displayName, color = TextPrimary)
+                                    Text(contact.handle.ifBlank { "Telegram contact" }, color = TextSecondary, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = groupTitle.isNotBlank() && selectedGroupMembers.size >= 2, onClick = {
+                    onCreateGroupChat(groupTitle.trim(), selectedGroupMembers.toList())
+                    showCreateGroupDialog = false
+                    showNewChatDialog = false
+                    groupTitle = ""
+                    selectedGroupMembers = emptySet()
+                }) { Text("Create", color = TelegramBlue) }
+            },
+            dismissButton = { TextButton(onClick = { showCreateGroupDialog = false }) { Text("Cancel") } }
+        )
+    }
     if (showNewChatDialog) {
         AlertDialog(
             onDismissRequest = { showNewChatDialog = false; contactSearchQuery = "" },
@@ -930,6 +974,7 @@ private fun AuthenticatedUserCard(
             title = { Text("New message", color = TextPrimary) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(onClick = { showCreateGroupDialog = true }, modifier = Modifier.fillMaxWidth()) { Text("＋ Create new group", color = TelegramBlue) }
                     OutlinedTextField(value = contactSearchQuery, onValueChange = { contactSearchQuery = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("Search your Telegram contacts") })
                     if (isLoadingContacts) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
                     else if (contacts.isEmpty()) Text("No contacts found. Add contacts in Telegram first, then search here.", color = TextSecondary)

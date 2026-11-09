@@ -265,6 +265,17 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.success(contacts)
     } catch (error: Throwable) { Result.failure(error) }
 
+    override suspend fun createGroupChat(title: String, userIds: List<Long>): Result<Long> = try {
+        val cleanTitle = title.trim()
+        require(cleanTitle.isNotEmpty() && cleanTitle.length <= 128) { "Group name must be 1–128 characters." }
+        require(userIds.distinct().size >= 2) { "Select at least two contacts." }
+        val chat = sendRequest(TdApi.CreateNewBasicGroupChat(userIds.distinct().toLongArray(), cleanTitle, 0)) as TdApi.Chat
+        refreshChats()
+        Result.success(chat.id)
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
+
     override suspend fun openPrivateChat(userId: Long): Result<Long> = try {
         require(userId != 0L) { "Choose a valid Telegram contact." }
         val chat = sendRequest(TdApi.CreatePrivateChat(userId, false)) as TdApi.Chat

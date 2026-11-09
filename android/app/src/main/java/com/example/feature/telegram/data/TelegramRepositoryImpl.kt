@@ -122,6 +122,8 @@ class TelegramRepositoryImpl(
     override suspend fun refreshChats(): Result<Unit> = withContext(ioDispatcher) { clientBridge.refreshChats() }
 
     override suspend fun searchContacts(query: String): Result<List<TelegramUser>> = withContext(ioDispatcher) { clientBridge.searchContacts(query) }
+    override suspend fun createGroupChat(title: String, userIds: List<Long>): Result<Long> = withContext(ioDispatcher) { clientBridge.createGroupChat(title, userIds) }
+
     override suspend fun openPrivateChat(userId: Long): Result<Long> = withContext(ioDispatcher) { clientBridge.openPrivateChat(userId) }
 
     override suspend fun toggleChatPinned(chatId: Long, isPinned: Boolean): Result<Unit> = withContext(ioDispatcher) {

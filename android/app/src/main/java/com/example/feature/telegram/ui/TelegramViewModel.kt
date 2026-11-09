@@ -65,6 +65,17 @@ class TelegramViewModel(
         }
     }
 
+    fun createGroupChat(title: String, userIds: List<Long>) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            repository.createGroupChat(title, userIds).onSuccess { chatId ->
+                openChat(chatId)
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoadingChats = false, errorMessage = error.message ?: "Could not create group.") }
+            }
+        }
+    }
+
     fun openPrivateChat(userId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }

@@ -1745,13 +1745,23 @@ private fun TelegramVideoContent(
 ) {
     var isPlaying by remember(message.id) { mutableStateOf(false) }
     val videoPath = message.mediaFilePath
+    val thumbnailBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null,
+        key1 = message.previewFilePath
+    ) {
+        value = withContext(Dispatchers.IO) {
+            message.previewFilePath
+                ?.takeIf { it.isNotBlank() }
+                ?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() }
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(SurfaceCard)
-            .padding(12.dp)
+            .padding(10.dp)
     ) {
         if (videoPath != null && isPlaying) {
             AndroidView(
@@ -1764,39 +1774,62 @@ private fun TelegramVideoContent(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
+                    .height(240.dp)
             )
+            TextButton(onClick = { isPlaying = false }) { Text("Close player") }
         } else {
-            Text("Video message", color = TextPrimary, fontWeight = FontWeight.Medium)
-            Text(
-                text = if (message.isMediaDownloading) "Downloading video..." else "Video is not downloaded",
-                color = TextSecondary,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 150.dp, max = 230.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF17212B)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (thumbnailBitmap != null) {
+                    Image(
+                        bitmap = thumbnailBitmap!!,
+                        contentDescription = "Video thumbnail",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.VideoLibrary,
+                        contentDescription = "Video",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(42.dp)
+                    )
+                }
+                if (videoPath != null) {
+                    IconButton(
+                        onClick = { isPlaying = true },
+                        modifier = Modifier
+                            .size(54.dp)
+                            .background(Color(0xCC000000), RoundedCornerShape(50))
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Play video", tint = Color.White)
+                    }
+                } else {
+                    TextButton(
+                        onClick = { message.mediaFileId?.let(onDownloadMedia) },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .background(Color(0xCC000000), RoundedCornerShape(20.dp))
+                    ) {
+                        Text(
+                            if (message.isMediaDownloading) "Downloading…" else "Download video",
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+            Text("Video", color = TextPrimary, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))
             if (message.isMediaDownloading) {
-                CircularProgressIndicator(
-                    color = TelegramBlue,
-                    modifier = Modifier.padding(top = 10.dp).size(22.dp),
-                    strokeWidth = 2.dp
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    color = TelegramBlue
                 )
-            } else if (videoPath != null) {
-                Button(
-                    onClick = { isPlaying = true },
-                    modifier = Modifier.padding(top = 8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
-                ) {
-                    Text("Play video")
-                }
-            } else {
-                Button(
-                    onClick = { message.mediaFileId?.let(onDownloadMedia) },
-                    enabled = message.mediaFileId != null,
-                    modifier = Modifier.padding(top = 8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
-                ) {
-                    Text("Download video")
-                }
             }
         }
     }

@@ -1244,12 +1244,22 @@ private fun AuthenticatedUserCard(
                     IconButton(onClick = onCloseChat) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back to chats", tint = TelegramBlue)
                     }
+                    val conversationAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, activeChat?.photoFilePath) {
+                        value = if (activeChat?.photoFilePath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
+                            runCatching { BitmapFactory.decodeFile(activeChat?.photoFilePath) }.getOrNull()
+                        }
+                    }
                     Box(
                         modifier = Modifier.size(44.dp).clip(CircleShape)
                             .background(Brush.linearGradient(listOf(TelegramBlue, AccentCyan))),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(activeChat?.title?.trim()?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        if (conversationAvatar != null) {
+                            Image(bitmap = conversationAvatar!!.asImageBitmap(), contentDescription = "Chat profile photo",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
+                        } else {
+                            Text(activeChat?.title?.trim()?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        }
                     }
                     Spacer(modifier = Modifier.width(11.dp))
                     Column(
@@ -1259,7 +1269,12 @@ private fun AuthenticatedUserCard(
                         }
                     ) {
                         Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                        Text("Telegram · View profile", color = TextSecondary, fontSize = 11.sp)
+                        Text(
+                            activeChat?.presenceText ?: "Tap to view profile",
+                            color = if (activeChat?.isOnline == true) Color(0xFF35C875) else TextSecondary,
+                            fontSize = 11.sp,
+                            maxLines = 1
+                        )
                     }
                     TextButton(onClick = {
                         showSharedMedia = !showSharedMedia
@@ -1327,6 +1342,16 @@ private fun AuthenticatedUserCard(
                     }
                 } else {
                     val conversationListState = androidx.compose.foundation.lazy.rememberLazyListState()
+                    LaunchedEffect(selectedChatId) {
+                        if (filteredMessages.isNotEmpty()) {
+                            conversationListState.scrollToItem(filteredMessages.lastIndex)
+                        }
+                    }
+                    LaunchedEffect(messages.size, selectedChatId, showSharedMedia, conversationSearchQuery) {
+                        if (!showSharedMedia && conversationSearchQuery.isBlank() && messages.isNotEmpty()) {
+                            conversationListState.animateScrollToItem(messages.lastIndex)
+                        }
+                    }
                     LaunchedEffect(selectedChatId, conversationListState.firstVisibleItemIndex) {
                         if (!showSharedMedia && conversationSearchQuery.isBlank() && conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
                             onLoadOlderMessages()
@@ -1405,6 +1430,12 @@ private fun AuthenticatedUserCard(
                                                     color = TextPrimary,
                                                     fontSize = 14.sp,
                                                     modifier = Modifier.weight(1f)
+                                                )
+                                                Text(
+                                                    formatTelegramChatTime(message.date),
+                                                    color = TextSecondary.copy(alpha = 0.8f),
+                                                    fontSize = 10.sp,
+                                                    modifier = Modifier.padding(start = 6.dp, top = 5.dp)
                                                 )
                                                 IconButton(
                                                     onClick = {

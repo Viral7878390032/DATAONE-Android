@@ -320,41 +320,46 @@ fun TelegramScreen(
 @Composable
 private fun TelegramBrandHero() {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 18.dp, bottom = 22.dp)
+            .padding(top = 28.dp, bottom = 26.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(RoundedCornerShape(26.dp))
-                .background(
-                    Brush.linearGradient(
-                        listOf(TelegramBlue, TelegramBlueGradiantEnd)
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Send,
-                contentDescription = "Telegram",
-                tint = Color.White,
-                modifier = Modifier.size(36.dp)
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Brush.linearGradient(listOf(TelegramBlue, TelegramBlueGradiantEnd))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Send,
+                    contentDescription = "Telegram connection",
+                    tint = Color.White,
+                    modifier = Modifier.size(27.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text("DATAONE", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text("ACCOUNT CONNECTION", color = TelegramBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+            }
         }
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(26.dp))
         Text(
-            text = "Telegram",
-            fontSize = 28.sp,
+            text = "Your chats,\none place.",
+            fontSize = 32.sp,
+            lineHeight = 37.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(9.dp))
         Text(
-            text = "Your conversations, together in DATAONE.",
+            text = "Connect your Telegram account to access your conversations and shared media inside DATAONE.",
             fontSize = 14.sp,
-            color = TextSecondary
+            color = TextSecondary,
+            lineHeight = 21.sp
         )
     }
 }
@@ -367,47 +372,36 @@ private fun AuthStepIndicator(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 14.dp)
+            .padding(bottom = 16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             repeat(3) { index ->
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(4.dp)
+                        .height(5.dp)
                         .clip(RoundedCornerShape(50))
                         .background(if (index < step) TelegramBlue else BorderHairline)
                 )
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(17.dp))
         Text(
             text = "STEP $step OF 3",
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 1.4.sp,
+            letterSpacing = 1.5.sp,
             color = TelegramBlue
         )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(title, fontSize = 23.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
         Spacer(modifier = Modifier.height(5.dp))
-        Text(
-            text = title,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = subtitle,
-            fontSize = 13.sp,
-            color = TextSecondary,
-            lineHeight = 18.sp
-        )
+        Text(subtitle, fontSize = 13.sp, color = TextSecondary, lineHeight = 19.sp)
     }
 }
-
 @Composable
 private fun MissingNativeLibraryBanner(onConfigureClick: () -> Unit) {
     Surface(
@@ -450,60 +444,42 @@ private fun UninitializedStateCard(
     onConnectClick: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(22.dp),
         color = SurfaceCard,
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Connect your Telegram",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
+        Column(modifier = Modifier.padding(22.dp)) {
+            Text("READY TO CONNECT", fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold, color = TelegramBlue)
+            Spacer(modifier = Modifier.height(9.dp))
+            Text("Bring your Telegram chats into DATAONE", fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Sign in with your Telegram phone number to see your chats and media in DATAONE.",
+                "Sign in with the mobile number linked to your Telegram account. Your existing chats stay in Telegram.",
                 fontSize = 13.sp,
                 color = TextSecondary,
-                lineHeight = 18.sp
+                lineHeight = 19.sp
             )
-            Spacer(modifier = Modifier.height(20.dp))
-
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Security, contentDescription = "Secure connection", tint = StatusSuccess, modifier = Modifier.size(17.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Secure sign-in · No new account needed", color = TextSecondary, fontSize = 11.sp)
+            }
+            Spacer(modifier = Modifier.height(21.dp))
             Button(
                 onClick = onConnectClick,
                 enabled = !isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = TelegramBlue,
-                    contentColor = Color.White
-                )
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue, contentColor = Color.White)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text(
-                        text = "Continue with Telegram",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
-                }
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("Get started", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
         }
     }
 }
-
 @Composable
 private fun PhoneNumberInputCard(
     phoneNumber: String,
@@ -512,83 +488,56 @@ private fun PhoneNumberInputCard(
     onSubmit: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(22.dp),
         color = SurfaceCard,
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = "Enter Phone Number",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Enter your phone number with your country code. We will send you a Telegram login code.",
-                fontSize = 13.sp,
-                color = TextSecondary
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-
+            Text("MOBILE NUMBER", fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold, color = TelegramBlue)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Which number do you use on Telegram?", fontSize = 18.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Spacer(modifier = Modifier.height(7.dp))
+            Text("Enter your number with its country code. We’ll send a sign-in code through Telegram.", fontSize = 13.sp, color = TextSecondary, lineHeight = 19.sp)
+            Spacer(modifier = Modifier.height(19.dp))
+            Text("Phone number", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+            Spacer(modifier = Modifier.height(7.dp))
             OutlinedTextField(
                 value = phoneNumber,
                 onValueChange = onPhoneChange,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("+91 98765 43210", color = TextMuted) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Phone,
-                        contentDescription = "Phone Icon",
-                        tint = TelegramBlue
-                    )
-                },
+                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = "Phone number", tint = TelegramBlue) },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Phone,
-                    imeAction = ImeAction.Send
-                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { onSubmit() }),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = TelegramBlue,
                     unfocusedBorderColor = BorderHairline,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
                     focusedContainerColor = SurfaceDark,
-                    unfocusedContainerColor = SurfaceDark
+                    unfocusedContainerColor = SurfaceDark,
+                    cursorColor = TelegramBlue
                 )
             )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Example: +91 followed by your 10-digit number", fontSize = 11.sp, color = TextMuted)
+            Spacer(modifier = Modifier.height(19.dp))
             Button(
                 onClick = onSubmit,
                 enabled = !isLoading && phoneNumber.length >= 8,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = TelegramBlue,
-                    contentColor = Color.White
-                )
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue, contentColor = Color.White)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Send Login Code", fontWeight = FontWeight.SemiBold)
-                }
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("Continue", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
         }
     }
 }
-
 @Composable
 private fun CodeVerificationCard(
     phoneNumber: String,
@@ -599,83 +548,54 @@ private fun CodeVerificationCard(
     onSubmit: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(22.dp),
         color = SurfaceCard,
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = "Verification Code",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Code dispatched via $deliveryType to $phoneNumber.",
-                fontSize = 13.sp,
-                color = TextSecondary
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-
+            Text("VERIFY YOUR NUMBER", fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold, color = TelegramBlue)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Enter the login code", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Spacer(modifier = Modifier.height(7.dp))
+            Text("Telegram sent a code via $deliveryType to $phoneNumber. Enter it below to continue.", fontSize = 13.sp, color = TextSecondary, lineHeight = 19.sp)
+            Spacer(modifier = Modifier.height(19.dp))
+            Text("Verification code", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+            Spacer(modifier = Modifier.height(7.dp))
             OutlinedTextField(
                 value = code,
                 onValueChange = onCodeChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("12345", color = TextMuted) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Code Icon",
-                        tint = TelegramBlue
-                    )
-                },
+                placeholder = { Text("Enter code", color = TextMuted) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Verification code", tint = TelegramBlue) },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onSubmit() }),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = TelegramBlue,
                     unfocusedBorderColor = BorderHairline,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
                     focusedContainerColor = SurfaceDark,
-                    unfocusedContainerColor = SurfaceDark
+                    unfocusedContainerColor = SurfaceDark,
+                    cursorColor = TelegramBlue
                 )
             )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
+            Spacer(modifier = Modifier.height(19.dp))
             Button(
                 onClick = onSubmit,
                 enabled = !isLoading && code.isNotBlank(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = TelegramBlue,
-                    contentColor = Color.White
-                )
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue, contentColor = Color.White)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Confirm Code", fontWeight = FontWeight.SemiBold)
-                }
+                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("Verify and continue", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
         }
     }
 }
-
 @Composable
 private fun TwoFactorPasswordCard(
     password: String,

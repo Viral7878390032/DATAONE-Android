@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Send
@@ -59,6 +60,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -986,93 +989,54 @@ private fun AuthenticatedUserCard(
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 12.dp)) {
                         items(filteredChats, key = { it.id }) { chat ->
+                            var showChatActions by remember(chat.id) { mutableStateOf(false) }
                             Row(
-                                modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(horizontal = 16.dp, vertical = 11.dp),
+                                modifier = Modifier.fillMaxWidth().clickable { onOpenChat(chat.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(modifier = Modifier.size(50.dp).clip(CircleShape).background(SurfaceCard), contentAlignment = Alignment.Center) {
-                                    Text(chat.title.take(1).uppercase(), color = TelegramBlue, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Box(
+                                    modifier = Modifier.size(52.dp).clip(CircleShape)
+                                        .background(Brush.linearGradient(listOf(TelegramBlue.copy(alpha = 0.9f), AccentCyan.copy(alpha = 0.65f)))),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(chat.title.trim().take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(13.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            chat.title,
-                                            modifier = Modifier.weight(1f),
-                                            color = TextPrimary,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 15.sp,
-                                            maxLines = 1
-                                        )
-                                        if (chat.isMuted) {
-                                            Text(
-                                                text = "🔕",
-                                                fontSize = 13.sp,
-                                                modifier = Modifier.padding(end = 2.dp)
-                                            )
-                                        }
-                                        if (chat.lastMessageDate > 0) {
-                                            Text(
-                                                formatTelegramChatTime(chat.lastMessageDate),
-                                                color = TextMuted,
-                                                fontSize = 11.sp
-                                            )
-                                        }
+                                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(chat.title, modifier = Modifier.weight(1f), color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1)
+                                        if (chat.isMuted) Text("🔕", fontSize = 12.sp, modifier = Modifier.padding(end = 5.dp))
+                                        if (chat.lastMessageDate > 0) Text(formatTelegramChatTime(chat.lastMessageDate), color = TextMuted, fontSize = 11.sp)
                                     }
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(5.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(chat.lastMessage, color = TextSecondary, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                                        Text(
+                                            chat.lastMessage.ifBlank { " " },
+                                            color = TextSecondary,
+                                            fontSize = 13.sp,
+                                            maxLines = 1,
+                                            modifier = Modifier.weight(1f)
+                                        )
                                         if (chat.unreadMentionCount > 0) {
-                                            Text(
-                                                "@ ${chat.unreadMentionCount}",
-                                                color = Color.White,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(8.dp)).background(TelegramBlue).padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
+                                            Text("@ ${chat.unreadMentionCount}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(start = 5.dp).clip(RoundedCornerShape(7.dp)).background(AccentCyan.copy(alpha = 0.8f)).padding(horizontal = 5.dp, vertical = 2.dp))
+                                        }
+                                        if (chat.unreadCount > 0) {
+                                            Box(modifier = Modifier.padding(start = 6.dp).clip(CircleShape).background(TelegramBlue).padding(horizontal = 7.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
+                                                Text(if (chat.unreadCount > 99) "99+" else chat.unreadCount.toString(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                            }
                                         }
                                     }
                                 }
-                                Column(horizontalAlignment = Alignment.End) {
-                                    TextButton(
-                                        onClick = { onToggleChatPinned(chat.id, !chat.isPinned) },
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                                    ) {
-                                        Text(
-                                            if (chat.isPinned) "Unpin" else "Pin",
-                                            color = if (chat.isPinned) TelegramBlue else TextMuted,
-                                            fontSize = 11.sp
-                                        )
+                                Box {
+                                    IconButton(onClick = { showChatActions = true }) {
+                                        Icon(Icons.Default.MoreVert, contentDescription = "Chat options", tint = TextMuted)
                                     }
-                                    TextButton(
-                                        onClick = { onToggleChatMarkedUnread(chat.id, !chat.isMarkedAsUnread) },
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                                    ) {
-                                        Text(
-                                            if (chat.isMarkedAsUnread) "Read" else "Unread",
-                                            color = if (chat.isMarkedAsUnread) TelegramBlue else TextMuted,
-                                            fontSize = 11.sp
-                                        )
-                                    }
-                                    TextButton(
-                                        onClick = { onToggleChatMuted(chat.id, !chat.isMuted) },
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                                    ) {
-                                        Text(if (chat.isMuted) "Unmute" else "Mute", color = if (chat.isMuted) TelegramBlue else TextMuted, fontSize = 11.sp)
-                                    }
-                                    TextButton(
-                                        onClick = { onToggleChatArchived(chat.id, !chat.isArchived) },
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                                    ) {
-                                        Text(if (chat.isArchived) "Restore" else "Archive", color = TelegramBlue, fontSize = 11.sp)
-                                    }
-                                    if (chat.unreadCount > 0) {
-                                        Box(modifier = Modifier.clip(CircleShape).background(TelegramBlue).padding(horizontal = 7.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
-                                            Text(chat.unreadCount.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        }
+                                    DropdownMenu(expanded = showChatActions, onDismissRequest = { showChatActions = false }) {
+                                        DropdownMenuItem(text = { Text(if (chat.isPinned) "Unpin chat" else "Pin chat") }, onClick = { showChatActions = false; onToggleChatPinned(chat.id, !chat.isPinned) })
+                                        DropdownMenuItem(text = { Text(if (chat.isMarkedAsUnread) "Mark as read" else "Mark as unread") }, onClick = { showChatActions = false; onToggleChatMarkedUnread(chat.id, !chat.isMarkedAsUnread) })
+                                        DropdownMenuItem(text = { Text(if (chat.isMuted) "Unmute notifications" else "Mute notifications") }, onClick = { showChatActions = false; onToggleChatMuted(chat.id, !chat.isMuted) })
+                                        DropdownMenuItem(text = { Text(if (chat.isArchived) "Restore from archive" else "Archive chat") }, onClick = { showChatActions = false; onToggleChatArchived(chat.id, !chat.isArchived) })
                                     }
                                 }
                             }

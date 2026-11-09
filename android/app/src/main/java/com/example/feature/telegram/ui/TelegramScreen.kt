@@ -15,6 +15,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.OpenableColumns
+import android.content.ContentValues
+import android.provider.MediaStore
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.foundation.Image
@@ -1710,7 +1712,41 @@ private fun TelegramAudioContent(
 }
 
 @Composable
+
+private fun saveTelegramMediaToGallery(context: android.content.Context, path: String, isVideo: Boolean) {
+    try {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Toast.makeText(context, "Saving to gallery requires Android 10 or newer.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val source = File(path)
+        if (!source.exists() || !source.isFile) {
+            Toast.makeText(context, "Media file is not available yet.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val resolver = context.contentResolver
+        val collection = if (isVideo) MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            else MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, source.name)
+            put(MediaStore.MediaColumns.MIME_TYPE, if (isVideo) "video/mp4" else "image/jpeg")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, if (isVideo) "Movies/DATAONE" else "Pictures/DATAONE")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(collection, values) ?: throw IllegalStateException("Could not create gallery item")
+        resolver.openOutputStream(uri)?.use { output -> source.inputStream().use { input -> input.copyTo(output) } }
+            ?: throw IllegalStateException("Could not write media to gallery")
+        values.clear()
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
+        Toast.makeText(context, if (isVideo) "Video saved to Movies/DATAONE" else "Photo saved to Pictures/DATAONE", Toast.LENGTH_SHORT).show()
+    } catch (error: Exception) {
+        Toast.makeText(context, error.message ?: "Unable to save media.", Toast.LENGTH_LONG).show()
+    }
+}
+
 private fun TelegramPhotoContent(message: com.example.feature.telegram.model.TelegramMessage, onDownloadMedia: (Int) -> Unit) {
+    val context = LocalContext.current
     var showFullPreview by remember(message.id) { mutableStateOf(false) }
     val photoBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, key1 = message.mediaFilePath, key2 = message.previewFilePath) {
         value = withContext(Dispatchers.IO) { val path = message.mediaFilePath ?: message.previewFilePath; path?.takeIf { it.isNotBlank() }?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() } }
@@ -1718,7 +1754,10 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
     if (photoBitmap != null) {
         Box {
             Image(bitmap = photoBitmap!!, contentDescription = "Telegram photo preview", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().heightIn(min = 110.dp, max = 300.dp).clip(RoundedCornerShape(12.dp)).clickable { showFullPreview = true })
-            if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }, modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).background(Color(0xAA101820), RoundedCornerShape(18.dp))) { Text("Load full image", color = Color.White, fontSize = 11.sp) }
+            Row(modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).background(Color(0xAA101820), RoundedCornerShape(18.dp))) {
+                if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load full image", color = Color.White, fontSize = 11.sp) }
+                else TextButton(onClick = { saveTelegramMediaToGallery(context, message.mediaFilePath, false) }) { Text("Save", color = Color.White, fontSize = 11.sp) }
+            }
         }
     } else {
         Column(modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp).clip(RoundedCornerShape(12.dp)).background(SurfaceCard).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1733,6 +1772,7 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = { showFullPreview = false }) { Text("Close") }
                 if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load original") }
+                else TextButton(onClick = { saveTelegramMediaToGallery(context, message.mediaFilePath, false) }) { Text("Save photo") }
             }
         }
     }
@@ -1743,6 +1783,7 @@ private fun TelegramVideoContent(
     message: com.example.feature.telegram.model.TelegramMessage,
     onDownloadMedia: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     var isPlaying by remember(message.id) { mutableStateOf(false) }
     val videoPath = message.mediaFilePath
     val thumbnailBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
@@ -1824,8 +1865,11 @@ private fun TelegramVideoContent(
                     }
                 }
             }
-            Text("Video", color = TextPrimary, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))
-            if (message.isMediaDownloading) {
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Video", color = TextPrimary, fontWeight = FontWeight.Medium)
+                if (!videoPath.isNullOrBlank()) TextButton(onClick = { saveTelegramMediaToGallery(context, videoPath, true) }) { Text("Save video") }
+            }
+            if (message.isMediaDownloading)
                 CircularProgressIndicator(
                     modifier = Modifier.padding(top = 8.dp).size(18.dp),
                     color = TelegramBlue,

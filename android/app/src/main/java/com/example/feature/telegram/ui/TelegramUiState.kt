@@ -2,6 +2,7 @@ package com.example.feature.telegram.ui
 
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
 
 /**
@@ -24,6 +25,8 @@ data class TelegramUiState(
     val chats: List<TelegramChat> = emptyList(),
     val messages: List<TelegramMessage> = emptyList(),
     val selectedChatId: Long? = null,
+    val chatDetails: TelegramChatDetails? = null,
+    val isLoadingChatDetails: Boolean = false,
     val isLoadingChats: Boolean = false,
     val messageDraft: String = "",
     val chatDrafts: Map<Long, String> = emptyMap()

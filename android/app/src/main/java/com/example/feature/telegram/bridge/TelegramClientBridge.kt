@@ -2,6 +2,7 @@ package com.example.feature.telegram.bridge
 
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
 import com.example.feature.telegram.model.TelegramMediaConfig
 import kotlinx.coroutines.flow.StateFlow
@@ -81,6 +82,7 @@ interface TelegramClientBridge {
     suspend fun toggleChatArchived(chatId: Long, isArchived: Boolean): Result<Unit>
     suspend fun toggleChatMuted(chatId: Long, isMuted: Boolean): Result<Unit>
 
+    suspend fun getChatDetails(chatId: Long): Result<TelegramChatDetails>
     suspend fun openChat(chatId: Long): Result<Unit>
     suspend fun searchChatMessages(chatId: Long, query: String): Result<Unit>
     suspend fun loadOlderMessages(chatId: Long): Result<Unit>

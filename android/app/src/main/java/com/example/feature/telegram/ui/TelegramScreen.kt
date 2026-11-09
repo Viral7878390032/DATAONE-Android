@@ -303,6 +303,9 @@ fun TelegramScreen(
                         onOpenChat = { viewModel.openChat(it) },
                         onLoadOlderMessages = { viewModel.loadOlderMessages() },
                         onSearchMessages = { viewModel.searchChatMessages(it) },
+                        onLoadChatDetails = { viewModel.loadChatDetails(it) },
+                        chatDetails = uiState.chatDetails,
+                        isLoadingChatDetails = uiState.isLoadingChatDetails,
                         onCloseChat = { viewModel.closeChat() },
                         onLogout = { viewModel.logout() }
                     )
@@ -811,6 +814,9 @@ private fun AuthenticatedUserCard(
     onOpenChat: (Long) -> Unit,
     onLoadOlderMessages: () -> Unit,
     onSearchMessages: (String) -> Unit,
+    onLoadChatDetails: (Long) -> Unit,
+    chatDetails: com.example.feature.telegram.model.TelegramChatDetails?,
+    isLoadingChatDetails: Boolean,
     onCloseChat: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -874,6 +880,7 @@ private fun AuthenticatedUserCard(
         }
     }
     var showSharedMedia by remember(selectedChatId) { mutableStateOf(false) }
+    var showChatDetails by remember(selectedChatId) { mutableStateOf(false) }
     val filteredMessages = messages.filter { message ->
         message.text.contains(conversationSearchQuery, ignoreCase = true) &&
             (!showSharedMedia || message.mediaType in listOf("photo", "video", "audio", "voice", "document"))
@@ -884,7 +891,39 @@ private fun AuthenticatedUserCard(
     var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editDraft by remember(selectedChatId) { mutableStateOf("") }
     var deleteTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
-    if (deleteTarget != null) AlertDialog(onDismissRequest = { deleteTarget = null }, title = { Text("Delete message?") }, text = { Text("Delete this message for everyone where Telegram permits?") }, confirmButton = { TextButton(onClick = { deleteTarget?.let { onDeleteMessage(it.id) }; deleteTarget = null }) { Text("Delete", color = Color(0xFFFF7777)) } }, dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } })
+    if (showChatDetails) {
+        val details = chatDetails
+        AlertDialog(
+            onDismissRequest = { showChatDetails = false },
+            title = { Text("Chat details", color = TextPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (isLoadingChatDetails) {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = TelegramBlue)
+                        }
+                    } else if (details != null) {
+                        Text(details.title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(details.chatType, color = TextSecondary)
+                        Text("Username: " + if (details.username.isBlank()) "Not available" else "@${details.username}", color = TextPrimary)
+                        Text("Phone: " + if (details.phoneNumber.isBlank()) "Not available" else details.phoneNumber, color = TextPrimary)
+                        Text("Chat ID: ${details.chatId}", color = TextSecondary, fontSize = 12.sp)
+                    } else {
+                        Text("Chat details are not available.", color = TextSecondary)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showChatDetails = false; showSharedMedia = true }) {
+                    Text("Shared media", color = TelegramBlue)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showChatDetails = false }) { Text("Close") }
+            }
+        )
+    }
+        if (deleteTarget != null) AlertDialog(onDismissRequest = { deleteTarget = null }, title = { Text("Delete message?") }, text = { Text("Delete this message for everyone where Telegram permits?") }, confirmButton = { TextButton(onClick = { deleteTarget?.let { onDeleteMessage(it.id) }; deleteTarget = null }) { Text("Delete", color = Color(0xFFFF7777)) } }, dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } })
     if (editTarget != null) {
         AlertDialog(
             onDismissRequest = { editTarget = null },
@@ -1181,9 +1220,14 @@ private fun AuthenticatedUserCard(
                         Text(activeChat?.title?.trim()?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     }
                     Spacer(modifier = Modifier.width(11.dp))
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier.weight(1f).clickable {
+                            showChatDetails = true
+                            selectedChatId?.let(onLoadChatDetails)
+                        }
+                    ) {
                         Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                        Text("Telegram", color = TextSecondary, fontSize = 11.sp)
+                        Text("Telegram · View profile", color = TextSecondary, fontSize = 11.sp)
                     }
                     TextButton(onClick = { showSharedMedia = !showSharedMedia }) {
                         Text(if (showSharedMedia) "Messages" else "Media ($sharedMediaCount)", color = TelegramBlue, fontSize = 12.sp)

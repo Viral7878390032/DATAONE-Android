@@ -7,6 +7,7 @@ import com.example.feature.telegram.bridge.TelegramClientBridge
 import com.example.feature.telegram.bridge.TelegramInitParams
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
 import com.example.feature.telegram.model.TelegramMediaConfig
 import com.example.feature.telegram.security.TelegramSessionSecurity
@@ -135,6 +136,7 @@ class TelegramRepositoryImpl(
         clientBridge.toggleChatMuted(chatId, isMuted)
     }
 
+    override suspend fun getChatDetails(chatId: Long): Result<TelegramChatDetails> = withContext(ioDispatcher) { clientBridge.getChatDetails(chatId) }
     override suspend fun openChat(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.openChat(chatId) }
     override suspend fun loadOlderMessages(chatId: Long): Result<Unit> = withContext(ioDispatcher) { clientBridge.loadOlderMessages(chatId) }
     override suspend fun searchChatMessages(chatId: Long, query: String): Result<Unit> = withContext(ioDispatcher) { clientBridge.searchChatMessages(chatId, query) }

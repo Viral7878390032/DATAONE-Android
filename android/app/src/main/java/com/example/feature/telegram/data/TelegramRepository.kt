@@ -2,6 +2,7 @@ package com.example.feature.telegram.data
 
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
 import kotlinx.coroutines.flow.StateFlow
 
@@ -64,6 +65,7 @@ interface TelegramRepository {
     fun saveChatDrafts(drafts: Map<Long, String>)
     fun clearChatDrafts()
 
+    suspend fun getChatDetails(chatId: Long): Result<TelegramChatDetails>
     suspend fun openChat(chatId: Long): Result<Unit>
     suspend fun searchChatMessages(chatId: Long, query: String): Result<Unit>
     suspend fun loadOlderMessages(chatId: Long): Result<Unit>

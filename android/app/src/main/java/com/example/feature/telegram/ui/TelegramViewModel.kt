@@ -100,6 +100,20 @@ class TelegramViewModel(
         }
     }
 
+    fun loadChatDetails(chatId: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingChatDetails = true, chatDetails = null, errorMessage = null) }
+            val result = repository.getChatDetails(chatId)
+            _uiState.update {
+                it.copy(
+                    isLoadingChatDetails = false,
+                    chatDetails = result.getOrNull(),
+                    errorMessage = result.exceptionOrNull()?.message
+                )
+            }
+        }
+    }
+
     fun openChat(chatId: Long) {
         viewModelScope.launch {
             _uiState.update { current ->

@@ -3,6 +3,7 @@ package com.example.feature.telegram.bridge
 import android.util.Log
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramChat
+import com.example.feature.telegram.model.TelegramChatDetails
 import com.example.feature.telegram.model.TelegramMessage
 import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.CoroutineScope
@@ -322,6 +323,41 @@ class NativeTdLibBridge : TelegramClientBridge {
         sendRequest(TdApi.SetChatNotificationSettings(chatId, settings))
         refreshChats()
         Result.success(Unit)
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
+
+    override suspend fun getChatDetails(chatId: Long): Result<TelegramChatDetails> = try {
+        require(chatId != 0L) { "Select a Telegram chat first." }
+        val chat = sendRequest(TdApi.GetChat(chatId)) as TdApi.Chat
+        var username = ""
+        var phoneNumber = ""
+        val chatType = when (val type = chat.type) {
+            is TdApi.ChatTypePrivate -> {
+                val user = sendRequest(TdApi.GetUser(type.userId)) as TdApi.User
+                username = user.username.orEmpty()
+                phoneNumber = user.phoneNumber.orEmpty()
+                "Private chat"
+            }
+            is TdApi.ChatTypeSecret -> {
+                val user = sendRequest(TdApi.GetUser(type.userId)) as TdApi.User
+                username = user.username.orEmpty()
+                phoneNumber = user.phoneNumber.orEmpty()
+                "Secret chat"
+            }
+            is TdApi.ChatTypeBasicGroup -> "Group"
+            is TdApi.ChatTypeSupergroup -> if (type.isChannel) "Channel" else "Supergroup"
+            else -> "Chat"
+        }
+        Result.success(
+            TelegramChatDetails(
+                chatId = chat.id,
+                title = chat.title,
+                chatType = chatType,
+                username = username,
+                phoneNumber = phoneNumber
+            )
+        )
     } catch (error: Throwable) {
         Result.failure(error)
     }

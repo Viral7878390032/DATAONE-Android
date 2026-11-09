@@ -421,7 +421,9 @@ class NativeTdLibBridge : TelegramClientBridge {
             null,
             true
         )
-        val replyTo = replyToMessageId?.let { TdApi.MessageReplyToMessage(chatId, it, null, 0, "", null, 0, null) }
+        val replyTo = replyToMessageId?.let { messageId ->
+            TdApi.InputMessageReplyToMessage().apply { this.messageId = messageId }
+        }
         sendRequest(TdApi.SendMessage(chatId, null, replyTo, null, null, content))
         openChat(chatId)
     } catch (error: Throwable) {

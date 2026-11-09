@@ -880,12 +880,27 @@ private fun AuthenticatedUserCard(
         }
     }
     var showSharedMedia by remember(selectedChatId) { mutableStateOf(false) }
+    var sharedMediaTab by remember(selectedChatId) { mutableStateOf("All") }
     var showChatDetails by remember(selectedChatId) { mutableStateOf(false) }
-    val filteredMessages = messages.filter { message ->
-        message.text.contains(conversationSearchQuery, ignoreCase = true) &&
-            (!showSharedMedia || message.mediaType in listOf("photo", "video", "audio", "voice", "document"))
+    val linkPattern = remember { Regex("""(https?://\\S+|www\\.\\S+)""", RegexOption.IGNORE_CASE) }
+    val isSharedLink: (com.example.feature.telegram.model.TelegramMessage) -> Boolean = { message ->
+        linkPattern.containsMatchIn(message.text)
     }
-    val sharedMediaCount = messages.count { it.mediaType in listOf("photo", "video", "audio", "voice", "document") }
+    val sharedMediaMessages = messages.filter { message ->
+        message.mediaType in listOf("photo", "video", "audio", "voice", "document") || isSharedLink(message)
+    }
+    val filteredMessages = messages.filter { message ->
+        val matchesSearch = message.text.contains(conversationSearchQuery, ignoreCase = true)
+        val matchesTab = !showSharedMedia || when (sharedMediaTab) {
+            "Photos" -> message.mediaType == "photo"
+            "Videos" -> message.mediaType == "video"
+            "Files" -> message.mediaType in listOf("document", "audio", "voice")
+            "Links" -> isSharedLink(message)
+            else -> message.mediaType in listOf("photo", "video", "audio", "voice", "document") || isSharedLink(message)
+        }
+        matchesSearch && matchesTab
+    }
+    val sharedMediaCount = sharedMediaMessages.size
     var replyTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var forwardTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
@@ -1229,7 +1244,10 @@ private fun AuthenticatedUserCard(
                         Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         Text("Telegram · View profile", color = TextSecondary, fontSize = 11.sp)
                     }
-                    TextButton(onClick = { showSharedMedia = !showSharedMedia }) {
+                    TextButton(onClick = {
+                        showSharedMedia = !showSharedMedia
+                        if (!showSharedMedia) sharedMediaTab = "All"
+                    }) {
                         Text(if (showSharedMedia) "Messages" else "Media ($sharedMediaCount)", color = TelegramBlue, fontSize = 12.sp)
                     }
                     IconButton(onClick = { showConversationSearch = !showConversationSearch; if (!showConversationSearch) conversationSearchQuery = "" }) {
@@ -1255,12 +1273,32 @@ private fun AuthenticatedUserCard(
                         )
                     )
                 }
+                if (showSharedMedia) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("All", "Photos", "Videos", "Files", "Links").forEach { tab ->
+                            TextButton(
+                                onClick = { sharedMediaTab = tab },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    tab,
+                                    color = if (sharedMediaTab == tab) TelegramBlue else TextSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (sharedMediaTab == tab) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
                 if (isLoadingChats && messages.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
                 } else if (filteredMessages.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text(
-                            if (showSharedMedia) "No shared media in the loaded messages yet." else if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
+                            if (showSharedMedia) "No ${sharedMediaTab.lowercase()} found in the loaded messages." else if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
                             color = TextSecondary
                         )
                     }

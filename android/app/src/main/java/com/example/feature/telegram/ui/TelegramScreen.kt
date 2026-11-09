@@ -1453,15 +1453,23 @@ private fun AuthenticatedUserCard(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         listOf("All", "Photos", "Videos", "Files", "Links").forEach { tab ->
+                            val tabCount = when (tab) {
+                                "Photos" -> sharedMediaMessages.count { it.mediaType == "photo" }
+                                "Videos" -> sharedMediaMessages.count { it.mediaType == "video" }
+                                "Files" -> sharedMediaMessages.count { it.mediaType in listOf("document", "audio", "voice") }
+                                "Links" -> sharedMediaMessages.count { isSharedLink(it) }
+                                else -> sharedMediaMessages.size
+                            }
                             TextButton(
                                 onClick = { sharedMediaTab = tab; onLoadSharedMedia(tab) },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    tab,
+                                    "$tab $tabCount",
                                     color = if (sharedMediaTab == tab) TelegramBlue else TextSecondary,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (sharedMediaTab == tab) FontWeight.Bold else FontWeight.Normal
+                                    fontSize = 11.sp,
+                                    fontWeight = if (sharedMediaTab == tab) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1
                                 )
                             }
                         }

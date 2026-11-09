@@ -214,13 +214,13 @@ class TelegramViewModel(
         }
     }
 
-    fun sendMessage() {
+    fun sendMessage(replyToMessageId: Long? = null) {
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()
         if (text.isBlank()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
-            val result = repository.sendTextMessage(chatId, text)
+            val result = repository.sendTextMessage(chatId, text, replyToMessageId)
             _uiState.update {
                 it.copy(
                     isLoadingChats = false,

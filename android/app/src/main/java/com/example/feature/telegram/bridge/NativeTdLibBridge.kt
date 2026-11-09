@@ -412,7 +412,7 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.failure(error)
     }
 
-    override suspend fun sendTextMessage(chatId: Long, text: String): Result<Unit> = try {
+    override suspend fun sendTextMessage(chatId: Long, text: String, replyToMessageId: Long?): Result<Unit> = try {
         val cleanText = text.trim()
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(cleanText.isNotEmpty()) { "Type a message before sending." }
@@ -421,7 +421,8 @@ class NativeTdLibBridge : TelegramClientBridge {
             null,
             true
         )
-        sendRequest(TdApi.SendMessage(chatId, null, null, null, null, content))
+        val replyTo = replyToMessageId?.let { TdApi.MessageReplyToMessage(it, null, 0) }
+        sendRequest(TdApi.SendMessage(chatId, null, replyTo, null, null, content))
         openChat(chatId)
     } catch (error: Throwable) {
         Result.failure(error)

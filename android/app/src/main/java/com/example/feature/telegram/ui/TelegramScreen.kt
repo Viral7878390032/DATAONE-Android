@@ -277,7 +277,7 @@ fun TelegramScreen(
                         isLoadingChats = uiState.isLoadingChats,
                         messageDraft = uiState.messageDraft,
                         onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
-                        onSendMessage = { viewModel.sendMessage() },
+                        onSendMessage = { replyToId -> viewModel.sendMessage(replyToId) },
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
@@ -777,7 +777,7 @@ private fun AuthenticatedUserCard(
     isLoadingChats: Boolean,
     messageDraft: String,
     onMessageDraftChange: (String) -> Unit,
-    onSendMessage: () -> Unit,
+    onSendMessage: (Long?) -> Unit,
     onSendPhoto: (String) -> Unit,
     onSendVideo: (String) -> Unit,
     onSendDocument: (String) -> Unit,
@@ -813,6 +813,7 @@ private fun AuthenticatedUserCard(
     var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
     var showConversationSearch by remember(selectedChatId) { mutableStateOf(false) }
     val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
+    var replyTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             coroutineScope.launch {
@@ -1137,6 +1138,12 @@ private fun AuthenticatedUserCard(
                                         if (message.mediaType == "audio" || message.mediaType == "voice") {
                                             TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
                                         }
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                            TextButton(
+                                                onClick = { replyTarget = message },
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                            ) { Text("Reply", color = TelegramBlue, fontSize = 11.sp) }
+                                        }
                                         if (message.text.isNotBlank()) {
                                             Row(
                                                 modifier = Modifier.fillMaxWidth().padding(top = if (message.mediaType == "photo") 6.dp else 0.dp),
@@ -1171,6 +1178,18 @@ private fun AuthenticatedUserCard(
                         }
                     }
                 }
+                if (replyTarget != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Replying to message", color = TelegramBlue, fontSize = 12.sp)
+                            Text(replyTarget?.text?.ifBlank { "Media message" }.orEmpty(), color = TextSecondary, maxLines = 1, fontSize = 13.sp)
+                        }
+                        TextButton(onClick = { replyTarget = null }) { Text("Cancel") }
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1203,7 +1222,7 @@ private fun AuthenticatedUserCard(
                     IconButton(onClick = { documentPicker.launch(arrayOf("*/*")) }, enabled = !isLoadingChats) {
                         Icon(Icons.Default.AttachFile, contentDescription = "Choose file", tint = TelegramBlue)
                     }
-                    IconButton(onClick = onSendMessage, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
+                    IconButton(onClick = { onSendMessage(replyTarget?.id); replyTarget = null }, enabled = messageDraft.isNotBlank() && !isLoadingChats) {
                         Icon(Icons.Default.Send, contentDescription = "Send message", tint = TelegramBlue)
                     }
                 }

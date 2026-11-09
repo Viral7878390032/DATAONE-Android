@@ -95,8 +95,14 @@ class NativeTdLibBridge : TelegramClientBridge {
                             is TdApi.UpdateChatLastMessage -> scope.launch { refreshChats() }
                             is TdApi.UpdateNewMessage -> {
                                 if (update.message.chatId == selectedChatId) {
-                                    scope.launch { openChat(update.message.chatId) }
-                                } else scope.launch { refreshChats() }
+                                    val incoming = toTelegramMessage(update.message)
+                                    _messages.update { current ->
+                                        (current.filterNot { it.id == incoming.id } + incoming)
+                                            .sortedWith(compareBy<TelegramMessage> { it.date }.thenBy { it.id })
+                                    }
+                                } else {
+                                    scope.launch { refreshChats() }
+                                }
                             }
                         }
                     },
@@ -464,21 +470,34 @@ class NativeTdLibBridge : TelegramClientBridge {
     }
 
     override suspend fun openChat(chatId: Long): Result<Unit> = try {
+        require(chatId != 0L) { "Select a valid Telegram chat." }
         selectedChatId = chatId
         hasMoreChatHistory = true
+        isLoadingOlderHistory = false
+        // Never show messages from the previously selected conversation.
+        _messages.value = emptyList()
+
+        // Open the conversation in TDLib before requesting its real server history.
+        sendRequest(TdApi.OpenChat(chatId))
         val result = sendRequest(TdApi.GetChatHistory(chatId, 0, 0, 50, false)) as TdApi.Messages
-        _messages.value = result.messages.reversed().map(::toTelegramMessage)
-        hasMoreChatHistory = result.messages.size >= 50
-        if (result.messages.isNotEmpty()) {
-            sendRequest(
-                TdApi.ViewMessages(
-                    chatId,
-                    result.messages.map { it.id }.toLongArray(),
-                    null,
-                    true
+        if (selectedChatId == chatId) {
+            val loadedMessages = result.messages.reversed().map(::toTelegramMessage)
+            // Keep any live messages received while history was in flight.
+            _messages.value = (loadedMessages + _messages.value)
+                .distinctBy { it.id }
+                .sortedWith(compareBy<TelegramMessage> { it.date }.thenBy { it.id })
+            hasMoreChatHistory = result.messages.size >= 50
+            if (result.messages.isNotEmpty()) {
+                sendRequest(
+                    TdApi.ViewMessages(
+                        chatId,
+                        result.messages.map { it.id }.toLongArray(),
+                        null,
+                        true
+                    )
                 )
-            )
-            refreshChats()
+                refreshChats()
+            }
         }
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }

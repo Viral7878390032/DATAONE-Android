@@ -863,8 +863,9 @@ private fun AuthenticatedUserCard(
     var showMutedOnly by remember { mutableStateOf(false) }
     var sortChatsByName by remember { mutableStateOf(false) }
     val visibleChats = chats.filter { it.isArchived == showArchivedOnly }
+    val unreadChatsCount = chats.count { !it.isArchived && (it.unreadCount > 0 || it.isMarkedAsUnread) }
     val filteredChats = visibleChats.filter { chat ->
-        (!showUnreadOnly || chat.unreadCount > 0) &&
+        (!showUnreadOnly || chat.unreadCount > 0 || chat.isMarkedAsUnread) &&
             (!showMutedOnly || chat.isMuted) &&
             (chat.title.contains(chatSearchQuery, ignoreCase = true) ||
                 chat.lastMessage.contains(chatSearchQuery, ignoreCase = true))
@@ -1110,25 +1111,25 @@ private fun AuthenticatedUserCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { showUnreadOnly = false },
+                        onClick = { showUnreadOnly = false; showArchivedOnly = false; showMutedOnly = false },
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (!showUnreadOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
-                            contentColor = if (!showUnreadOnly) TelegramBlue else TextSecondary
+                            containerColor = if (!showUnreadOnly && !showArchivedOnly && !showMutedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
+                            contentColor = if (!showUnreadOnly && !showArchivedOnly && !showMutedOnly) TelegramBlue else TextSecondary
                         ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (!showUnreadOnly) TelegramBlue else BorderHairline),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (!showUnreadOnly && !showArchivedOnly && !showMutedOnly) TelegramBlue else BorderHairline),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                     ) { Text("All (${chats.size})", fontSize = 12.sp) }
                     OutlinedButton(
-                        onClick = { showUnreadOnly = true; showArchivedOnly = false },
+                        onClick = { showUnreadOnly = true; showArchivedOnly = false; showMutedOnly = false },
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (showUnreadOnly && !showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
                             contentColor = if (showUnreadOnly && !showArchivedOnly) TelegramBlue else TextSecondary
                         ),
                         border = androidx.compose.foundation.BorderStroke(1.dp, if (showUnreadOnly && !showArchivedOnly) TelegramBlue else BorderHairline),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                    ) { Text("Unread (${chats.count { !it.isArchived && it.unreadCount > 0 }})", fontSize = 12.sp) }
+                    ) { Text("Unread ($unreadChatsCount)", fontSize = 12.sp) }
                     OutlinedButton(
-                        onClick = { showArchivedOnly = !showArchivedOnly; showUnreadOnly = false },
+                        onClick = { showArchivedOnly = !showArchivedOnly; showUnreadOnly = false; showMutedOnly = false },
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (showArchivedOnly) TelegramBlue.copy(alpha = 0.18f) else SurfaceDark,
                             contentColor = if (showArchivedOnly) TelegramBlue else TextSecondary

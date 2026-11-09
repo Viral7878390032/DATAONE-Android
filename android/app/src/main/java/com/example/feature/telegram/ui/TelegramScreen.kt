@@ -217,6 +217,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitPhoneNumber -> {
+                    AuthStepIndicator(step = 1, title = "Your phone number", subtitle = "Start by entering the number linked to Telegram.")
                     PhoneNumberInputCard(
                         phoneNumber = uiState.phoneInput,
                         isLoading = uiState.isLoading,
@@ -226,6 +227,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitCode -> {
+                    AuthStepIndicator(step = 2, title = "Verify your number", subtitle = "Enter the login code sent by Telegram.")
                     CodeVerificationCard(
                         phoneNumber = state.phoneNumber,
                         code = uiState.codeInput,
@@ -237,6 +239,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitPassword -> {
+                    AuthStepIndicator(step = 3, title = "Extra account security", subtitle = "Complete your Telegram two-step verification.")
                     TwoFactorPasswordCard(
                         password = uiState.passwordInput,
                         hint = state.passwordHint,
@@ -249,6 +252,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitRegistration -> {
+                    AuthStepIndicator(step = 3, title = "Create your profile", subtitle = "Add your name to finish Telegram sign-up.")
                     RegistrationCard(
                         firstName = uiState.registrationFirstName,
                         lastName = uiState.registrationLastName,
@@ -348,6 +352,56 @@ private fun TelegramBrandHero() {
         )
     }
 }
+@Composable
+private fun AuthStepIndicator(
+    step: Int,
+    title: String,
+    subtitle: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            repeat(3) { index ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (index < step) TelegramBlue else BorderHairline)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "STEP $step OF 3",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.4.sp,
+            color = TelegramBlue
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(
+            text = title,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = subtitle,
+            fontSize = 13.sp,
+            color = TextSecondary,
+            lineHeight = 18.sp
+        )
+    }
+}
+
 @Composable
 private fun MissingNativeLibraryBanner(onConfigureClick: () -> Unit) {
     Surface(

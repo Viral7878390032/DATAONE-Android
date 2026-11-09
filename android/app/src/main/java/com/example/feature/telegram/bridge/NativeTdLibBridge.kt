@@ -287,7 +287,14 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun addGroupMembers(chatId: Long, userIds: List<Long>): Result<Unit> = try {
         val ids = userIds.distinct().filter { it != 0L }
         require(chatId != 0L && ids.isNotEmpty()) { "Select at least one contact to add." }
-        sendRequest(TdApi.AddChatMembers(chatId, ids.toLongArray(), 0))
+        sendRequest(TdApi.AddChatMembers(chatId, ids.toLongArray()))
+        refreshChats()
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
+    override suspend fun removeGroupMember(chatId: Long, userId: Long): Result<Unit> = try {
+        require(chatId != 0L && userId != 0L) { "Select a valid group member." }
+        sendRequest(TdApi.SetChatMemberStatus(chatId, TdApi.MessageSenderUser(userId), TdApi.ChatMemberStatusBanned()))
         refreshChats()
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }

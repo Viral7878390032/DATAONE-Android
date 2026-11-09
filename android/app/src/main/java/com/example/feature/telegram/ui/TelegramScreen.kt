@@ -820,7 +820,12 @@ private fun AuthenticatedUserCard(
     )
     var conversationSearchQuery by remember(selectedChatId) { mutableStateOf("") }
     var showConversationSearch by remember(selectedChatId) { mutableStateOf(false) }
-    val filteredMessages = messages.filter { it.text.contains(conversationSearchQuery, ignoreCase = true) }
+    var showSharedMedia by remember(selectedChatId) { mutableStateOf(false) }
+    val filteredMessages = messages.filter { message ->
+        message.text.contains(conversationSearchQuery, ignoreCase = true) &&
+            (!showSharedMedia || message.mediaType in listOf("photo", "video", "audio", "voice", "document"))
+    }
+    val sharedMediaCount = messages.count { it.mediaType in listOf("photo", "video", "audio", "voice", "document") }
     var replyTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var forwardTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
@@ -1127,6 +1132,9 @@ private fun AuthenticatedUserCard(
                         Text(activeChat?.title ?: "Chat", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         Text("Telegram", color = TextSecondary, fontSize = 11.sp)
                     }
+                    TextButton(onClick = { showSharedMedia = !showSharedMedia }) {
+                        Text(if (showSharedMedia) "Messages" else "Media ($sharedMediaCount)", color = TelegramBlue, fontSize = 12.sp)
+                    }
                     IconButton(onClick = { showConversationSearch = !showConversationSearch; if (!showConversationSearch) conversationSearchQuery = "" }) {
                         Icon(Icons.Default.Search, contentDescription = "Search messages", tint = TelegramBlue)
                     }
@@ -1155,14 +1163,14 @@ private fun AuthenticatedUserCard(
                 } else if (filteredMessages.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text(
-                            if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
+                            if (showSharedMedia) "No shared media in the loaded messages yet." else if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
                             color = TextSecondary
                         )
                     }
                 } else {
                     val conversationListState = androidx.compose.foundation.lazy.rememberLazyListState()
                     LaunchedEffect(selectedChatId, conversationListState.firstVisibleItemIndex) {
-                        if (conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
+                        if (!showSharedMedia && conversationListState.firstVisibleItemIndex <= 2 && filteredMessages.isNotEmpty()) {
                             onLoadOlderMessages()
                         }
                     }
@@ -1194,6 +1202,13 @@ private fun AuthenticatedUserCard(
                                         }
                                         if (message.mediaType == "audio" || message.mediaType == "voice") {
                                             TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
+                                        }
+                                        if (message.mediaType == "document") {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(Icons.Default.AttachFile, contentDescription = "File", tint = TelegramBlue)
+                                                Text("Shared file", color = TextPrimary, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                                                TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }, enabled = message.mediaFileId != null) { Text("Download") }
+                                            }
                                         }
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                             if (message.isOutgoing && message.mediaType == null && message.text.isNotBlank()) {

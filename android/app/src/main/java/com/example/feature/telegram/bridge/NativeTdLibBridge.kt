@@ -274,7 +274,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     isMuted = chat.notificationSettings.muteFor > 0,
                                     unreadMentionCount = chat.unreadMentionCount,
                                     photoFileId = chat.photo?.small?.id ?: 0,
-                                    photoFilePath = chat.photo?.small?.local?.path?.takeIf { chat.photo.small.local.isDownloadingCompleted && it.isNotBlank() }
+                                    photoFilePath = chat.photo?.small?.let { photo -> photo.local.path.takeIf { photo.local.isDownloadingCompleted && it.isNotBlank() } }
                                 ).also { chatModel ->
                                     val photoFile = chat.photo?.small
                                     if (photoFile != null && !photoFile.local.isDownloadingCompleted) {

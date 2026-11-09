@@ -1800,6 +1800,7 @@ private fun TelegramVideoContent(
 ) {
     val context = LocalContext.current
     var isPlaying by remember(message.id) { mutableStateOf(false) }
+    var showFullscreenPlayer by remember(message.id) { mutableStateOf(false) }
     val videoPath = message.mediaFilePath
     val thumbnailBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null,
@@ -1893,10 +1894,15 @@ private fun TelegramVideoContent(
             ) {
                 Text("Video", color = TextPrimary, fontWeight = FontWeight.Medium)
                 if (!videoPath.isNullOrBlank()) {
-                    TextButton(onClick = {
-                        saveTelegramMediaToGallery(context, videoPath, true)
-                    }) {
-                        Text("Save video")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { showFullscreenPlayer = true }) {
+                            Text("Full screen")
+                        }
+                        TextButton(onClick = {
+                            saveTelegramMediaToGallery(context, videoPath, true)
+                        }) {
+                            Text("Save video")
+                        }
                     }
                 }
             }
@@ -1909,6 +1915,48 @@ private fun TelegramVideoContent(
                     color = TelegramBlue,
                     strokeWidth = 2.dp
                 )
+            }
+        }
+    }
+
+    if (showFullscreenPlayer && !videoPath.isNullOrBlank()) {
+        Dialog(
+            onDismissRequest = { showFullscreenPlayer = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF080D13), RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AndroidView(
+                    factory = { viewContext ->
+                        VideoView(viewContext).apply {
+                            setVideoPath(videoPath)
+                            setMediaController(MediaController(viewContext).also { it.setAnchorView(this) })
+                            setOnPreparedListener { player ->
+                                player.isLooping = false
+                                player.start()
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 220.dp, max = 520.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(onClick = {
+                        saveTelegramMediaToGallery(context, videoPath, true)
+                    }) { Text("Save video") }
+                    TextButton(onClick = { showFullscreenPlayer = false }) {
+                        Text("Close", color = Color.White)
+                    }
+                }
             }
         }
     }

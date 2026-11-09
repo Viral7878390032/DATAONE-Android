@@ -1504,9 +1504,9 @@ private fun AuthenticatedUserCard(
                                         0.5.dp,
                                         if (message.isOutgoing) Color(0xFF286887) else Color(0xFF2A3949)
                                     ),
-                                    modifier = Modifier.fillMaxWidth(0.86f)
+                                    modifier = Modifier.fillMaxWidth(0.84f)
                                 ) {
-                                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
+                                    Column(modifier = Modifier.padding(7.dp)) {
                                         if (message.isPinned) {
                                             Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp,
                                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp))

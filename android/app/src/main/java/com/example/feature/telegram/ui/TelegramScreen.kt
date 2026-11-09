@@ -1711,8 +1711,6 @@ private fun TelegramAudioContent(
     }
 }
 
-@Composable
-
 private fun saveTelegramMediaToGallery(context: android.content.Context, path: String, isVideo: Boolean) {
     try {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {

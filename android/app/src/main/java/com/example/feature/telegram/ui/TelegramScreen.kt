@@ -11,6 +11,7 @@ import android.content.ClipboardManager
 import android.widget.Toast
 import android.media.MediaPlayer
 import android.media.MediaRecorder
+import kotlinx.coroutines.delay
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -86,6 +87,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -1802,11 +1804,25 @@ private fun TelegramAudioContent(
     val context = LocalContext.current
     var isPlaying by remember(message.id) { mutableStateOf(false) }
     var player by remember(message.id) { mutableStateOf<MediaPlayer?>(null) }
+    var durationMs by remember(message.id) { mutableStateOf(0) }
+    var positionMs by remember(message.id) { mutableStateOf(0f) }
 
     androidx.compose.runtime.DisposableEffect(message.id) {
         onDispose {
-            player?.release()
+            runCatching { player?.release() }
             player = null
+        }
+    }
+
+    LaunchedEffect(isPlaying, player) {
+        while (isPlaying && player != null) {
+            val activePlayer = player ?: break
+            if (runCatching { activePlayer.isPlaying }.getOrDefault(false)) {
+                positionMs = activePlayer.currentPosition.toFloat()
+            } else {
+                isPlaying = false
+            }
+            delay(250)
         }
     }
 
@@ -1834,30 +1850,41 @@ private fun TelegramAudioContent(
                 Button(
                     onClick = {
                         val path = message.mediaFilePath ?: return@Button
-                        if (isPlaying) {
-                            player?.pause()
-                            isPlaying = false
-                        } else {
-                            try {
-                                if (player == null) {
-                                    player = MediaPlayer().apply {
-                                        setDataSource(path)
-                                        setOnCompletionListener { isPlaying = false }
-                                        prepare()
+                        try {
+                            if (player == null) {
+                                player = MediaPlayer().apply {
+                                    setDataSource(path)
+                                    setOnCompletionListener {
+                                        isPlaying = false
+                                        positionMs = 0f
+                                        runCatching { seekTo(0) }
                                     }
+                                    prepare()
                                 }
-                                player?.start()
-                                isPlaying = true
-                            } catch (error: Exception) {
-                                player?.release()
-                                player = null
-                                isPlaying = false
+                                durationMs = player?.duration?.coerceAtLeast(0) ?: 0
                             }
+                            val activePlayer = player ?: return@Button
+                            if (isPlaying) {
+                                activePlayer.pause()
+                                isPlaying = false
+                            } else {
+                                if (durationMs > 0 && positionMs >= durationMs) {
+                                    activePlayer.seekTo(0)
+                                    positionMs = 0f
+                                }
+                                activePlayer.start()
+                                isPlaying = true
+                            }
+                        } catch (error: Exception) {
+                            runCatching { player?.release() }
+                            player = null
+                            isPlaying = false
+                            Toast.makeText(context, "Unable to play this audio file.", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
                 ) {
-                    Text(if (isPlaying) "Pause" else "Play")
+                    Text(if (isPlaying) "Pause" else if (positionMs > 0f) "Resume" else "Play")
                 }
                 Text(
                     if (message.mediaType == "voice") "Voice note" else "Audio file",
@@ -1865,6 +1892,31 @@ private fun TelegramAudioContent(
                     fontSize = 12.sp,
                     modifier = Modifier.padding(start = 10.dp).weight(1f)
                 )
+            }
+            if (player != null) {
+                Slider(
+                    value = positionMs.coerceIn(0f, durationMs.coerceAtLeast(1).toFloat()),
+                    onValueChange = { positionMs = it },
+                    onValueChangeFinished = {
+                        runCatching { player?.seekTo(positionMs.toInt()) }
+                    },
+                    valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
+                    enabled = durationMs > 0,
+                    modifier = Modifier.fillMaxWidth().height(30.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(formatTelegramAudioTime(positionMs.toInt()), color = TextSecondary, fontSize = 10.sp)
+                    Text(formatTelegramAudioTime(durationMs), color = TextSecondary, fontSize = 10.sp)
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 TextButton(onClick = { shareTelegramMedia(context, message.mediaFilePath!!, message.mediaType ?: "audio") }) {
                     Text("Share", color = TelegramBlue)
                 }
@@ -1882,6 +1934,11 @@ private fun TelegramAudioContent(
             }
         }
     }
+}
+
+private fun formatTelegramAudioTime(milliseconds: Int): String {
+    val totalSeconds = (milliseconds.coerceAtLeast(0) / 1000)
+    return "%d:%02d".format(totalSeconds / 60, totalSeconds % 60)
 }
 
 private fun saveTelegramAudioToDownloads(context: android.content.Context, path: String) {

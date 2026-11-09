@@ -401,6 +401,17 @@ class NativeTdLibBridge : TelegramClientBridge {
         Result.success(Unit)
     } catch (error: Throwable) { Result.failure(error) }
 
+    override suspend fun toggleMessagePinned(chatId: Long, messageId: Long, isPinned: Boolean): Result<Unit> = try {
+        require(chatId != 0L && messageId != 0L) { "Select a valid message to pin." }
+        if (isPinned) {
+            sendRequest(TdApi.UnpinChatMessage(chatId, messageId))
+        } else {
+            sendRequest(TdApi.PinChatMessage(chatId, messageId, true))
+        }
+        if (selectedChatId == chatId) openChat(chatId)
+        Result.success(Unit)
+    } catch (error: Throwable) { Result.failure(error) }
+
     override suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit> = try {
         require(chatId != 0L) { "Choose a Telegram chat first." }
         require(path.isNotBlank() && File(path).isFile) { "The selected photo could not be opened." }
@@ -537,6 +548,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             },
             date = message.date,
             isOutgoing = message.isOutgoing,
+            isPinned = message.isPinned,
             mediaType = mediaType,
             mediaFileId = photoFile?.id ?: videoFile?.id ?: documentFile?.id ?: audioFile?.id,
             mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },

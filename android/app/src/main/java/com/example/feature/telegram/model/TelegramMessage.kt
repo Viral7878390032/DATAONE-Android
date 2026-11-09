@@ -10,5 +10,6 @@ data class TelegramMessage(
     val mediaFileId: Int? = null,
     val mediaFilePath: String? = null,
     val isMediaDownloaded: Boolean = false,
-    val isMediaDownloading: Boolean = false
+    val isMediaDownloading: Boolean = false,
+    val isPinned: Boolean = false
 )

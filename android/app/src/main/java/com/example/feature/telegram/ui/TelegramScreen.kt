@@ -288,6 +288,7 @@ fun TelegramScreen(
                         onEditMessage = { messageId, text -> viewModel.editTextMessage(messageId, text) },
                         onDeleteMessage = { viewModel.deleteMessage(it) },
                         onReactMessage = { id, emoji -> viewModel.addMessageReaction(id, emoji) },
+                        onToggleMessagePinned = { id, pinned -> viewModel.toggleMessagePinned(id, pinned) },
                         onSendPhoto = { path -> viewModel.sendPhotoMessage(path) },
                         onSendVideo = { path -> viewModel.sendVideoMessage(path) },
                         onSendDocument = { path -> viewModel.sendDocumentMessage(path) },
@@ -794,6 +795,7 @@ private fun AuthenticatedUserCard(
     onEditMessage: (Long, String) -> Unit,
     onDeleteMessage: (Long) -> Unit,
     onReactMessage: (Long, String) -> Unit,
+    onToggleMessagePinned: (Long, Boolean) -> Unit,
     onSendPhoto: (String) -> Unit,
     onSendVideo: (String) -> Unit,
     onSendDocument: (String) -> Unit,
@@ -1253,7 +1255,14 @@ private fun AuthenticatedUserCard(
                                                 TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }, enabled = message.mediaFileId != null) { Text("Download") }
                                             }
                                         }
+                                        if (message.isPinned) {
+                                            Text("📌 Pinned message", color = AccentCyan, fontSize = 11.sp, modifier = Modifier.padding(bottom = 4.dp))
+                                        }
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                            TextButton(
+                                                onClick = { onToggleMessagePinned(message.id, message.isPinned) },
+                                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                            ) { Text(if (message.isPinned) "Unpin" else "Pin", color = AccentCyan, fontSize = 11.sp) }
                                             if (message.isOutgoing && message.mediaType == null && message.text.isNotBlank()) {
                                                 TextButton(
                                                     onClick = { editTarget = message; editDraft = message.text },

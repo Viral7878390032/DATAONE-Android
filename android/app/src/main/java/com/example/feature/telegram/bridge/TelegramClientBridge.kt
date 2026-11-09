@@ -87,6 +87,7 @@ interface TelegramClientBridge {
     suspend fun editTextMessage(chatId: Long, messageId: Long, newText: String): Result<Unit>
     suspend fun deleteMessage(chatId: Long, messageId: Long): Result<Unit>
     suspend fun addMessageReaction(chatId: Long, messageId: Long, emoji: String): Result<Unit>
+    suspend fun toggleMessagePinned(chatId: Long, messageId: Long, isPinned: Boolean): Result<Unit>
     suspend fun sendTextMessage(chatId: Long, text: String, replyToMessageId: Long? = null): Result<Unit>
     suspend fun sendPhotoMessage(chatId: Long, path: String, caption: String): Result<Unit>
     suspend fun sendVideoMessage(chatId: Long, path: String, caption: String): Result<Unit>

@@ -266,6 +266,13 @@ class TelegramViewModel(
         val chatId = _uiState.value.selectedChatId ?: return
         viewModelScope.launch { val result = repository.addMessageReaction(chatId, messageId, emoji); _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) } }
     }
+    fun toggleMessagePinned(messageId: Long, isPinned: Boolean) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch {
+            val result = repository.toggleMessagePinned(chatId, messageId, isPinned)
+            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: if (result.isSuccess) null else "Unable to update pinned message.") }
+        }
+    }
     fun sendMessage(replyToMessageId: Long? = null) {
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()

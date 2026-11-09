@@ -1691,6 +1691,13 @@ private fun AuthenticatedUserCard(
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
+                            Text(
+                                text = if (selectedIndex >= 0) "${selectedIndex + 1} of ${galleryItems.size}" else "",
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                textAlign = TextAlign.Center
+                            )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,

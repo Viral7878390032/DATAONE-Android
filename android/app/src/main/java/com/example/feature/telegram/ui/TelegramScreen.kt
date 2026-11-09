@@ -23,6 +23,7 @@ import android.widget.VideoView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -105,6 +106,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1609,10 +1611,30 @@ private fun AuthenticatedUserCard(
                                 )
                                 TextButton(onClick = { selectedSharedMediaMessage = null }) { Text("Close", color = TelegramBlue) }
                             }
-                            if (selected.mediaType == "video") {
-                                TelegramVideoContent(message = selected, onDownloadMedia = onDownloadMedia)
-                            } else {
-                                TelegramPhotoContent(message = selected, onDownloadMedia = onDownloadMedia)
+                            Box(
+                                modifier = Modifier.fillMaxWidth().pointerInput(selected.id, selectedIndex, galleryItems.size) {
+                                    var horizontalDrag = 0f
+                                    detectHorizontalDragGestures(
+                                        onHorizontalDrag = { _, dragAmount ->
+                                            horizontalDrag += dragAmount
+                                        },
+                                        onDragEnd = {
+                                            if (horizontalDrag < -70f && selectedIndex >= 0 && selectedIndex < galleryItems.lastIndex) {
+                                                selectedSharedMediaMessage = galleryItems[selectedIndex + 1]
+                                            } else if (horizontalDrag > 70f && selectedIndex > 0) {
+                                                selectedSharedMediaMessage = galleryItems[selectedIndex - 1]
+                                            }
+                                            horizontalDrag = 0f
+                                        },
+                                        onDragCancel = { horizontalDrag = 0f }
+                                    )
+                                }
+                            ) {
+                                if (selected.mediaType == "video") {
+                                    TelegramVideoContent(message = selected, onDownloadMedia = onDownloadMedia)
+                                } else {
+                                    TelegramPhotoContent(message = selected, onDownloadMedia = onDownloadMedia)
+                                }
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

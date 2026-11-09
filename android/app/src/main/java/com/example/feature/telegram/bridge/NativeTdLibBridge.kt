@@ -246,8 +246,23 @@ class NativeTdLibBridge : TelegramClientBridge {
     }
 
     override suspend fun refreshChats(): Result<Unit> = try {
-        // TDLib returns chat IDs in its main chat-list order. Request the largest
-        // supported page and hydrate chat details with bounded concurrency.
+        // Load every available page from both TDLib chat lists before reading IDs.
+        // GetChats only returns chats already loaded into TDLib's local chat list;
+        // LoadChats asks TDLib to continue loading older entries from the server.
+        suspend fun loadAllChats(chatList: TdApi.ChatList) {
+            repeat(100) {
+                try {
+                    sendRequest(TdApi.LoadChats(chatList, 1000))
+                } catch (error: Throwable) {
+                    // TDLib returns 404 when this list has no more chats to load.
+                    if (error.message.orEmpty().contains("404")) return
+                    throw error
+                }
+            }
+        }
+        loadAllChats(TdApi.ChatListMain())
+        loadAllChats(TdApi.ChatListArchive())
+
         val mainResult = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 1000)) as TdApi.Chats
         val archiveResult = sendRequest(TdApi.GetChats(TdApi.ChatListArchive(), 1000)) as TdApi.Chats
         val archivedIds = archiveResult.chatIds.toSet()

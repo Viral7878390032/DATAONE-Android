@@ -71,6 +71,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -1709,60 +1710,29 @@ private fun TelegramAudioContent(
 }
 
 @Composable
-private fun TelegramPhotoContent(
-    message: com.example.feature.telegram.model.TelegramMessage,
-    onDownloadMedia: (Int) -> Unit
-) {
-    val photoBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null,
-        key1 = message.mediaFilePath
-    ) {
-        value = withContext(Dispatchers.IO) {
-            message.mediaFilePath
-                ?.takeIf { it.isNotBlank() }
-                ?.let { path -> BitmapFactory.decodeFile(path)?.asImageBitmap() }
+private fun TelegramPhotoContent(message: com.example.feature.telegram.model.TelegramMessage, onDownloadMedia: (Int) -> Unit) {
+    var showFullPreview by remember(message.id) { mutableStateOf(false) }
+    val photoBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, key1 = message.mediaFilePath, key2 = message.previewFilePath) {
+        value = withContext(Dispatchers.IO) { val path = message.mediaFilePath ?: message.previewFilePath; path?.takeIf { it.isNotBlank() }?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() } }
+    }
+    if (photoBitmap != null) {
+        Box {
+            Image(bitmap = photoBitmap!!, contentDescription = "Telegram photo preview", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().heightIn(min = 110.dp, max = 300.dp).clip(RoundedCornerShape(12.dp)).clickable { showFullPreview = true })
+            if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }, modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).background(Color(0xAA101820), RoundedCornerShape(18.dp))) { Text("Load full image", color = Color.White, fontSize = 11.sp) }
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp).clip(RoundedCornerShape(12.dp)).background(SurfaceCard).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(if (message.isMediaDownloading) "Loading photo…" else "Photo preview", color = TextSecondary, fontSize = 13.sp)
+            if (message.isMediaDownloading) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.padding(top = 10.dp).size(22.dp), strokeWidth = 2.dp)
+            else Button(onClick = { (message.previewFileId ?: message.mediaFileId)?.let(onDownloadMedia) }, enabled = message.previewFileId != null || message.mediaFileId != null, modifier = Modifier.padding(top = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)) { Text("Preview image") }
         }
     }
-
-    if (photoBitmap != null) {
-        Image(
-            bitmap = photoBitmap!!,
-            contentDescription = "Telegram photo",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 280.dp)
-                .clip(RoundedCornerShape(12.dp))
-        )
-    } else {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(SurfaceCard)
-                .padding(14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = if (message.isMediaDownloading) "Downloading photo..." else "Photo",
-                color = TextSecondary,
-                fontSize = 13.sp
-            )
-            if (message.isMediaDownloading) {
-                CircularProgressIndicator(
-                    color = TelegramBlue,
-                    modifier = Modifier.padding(top = 10.dp).size(22.dp),
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Button(
-                    onClick = { message.mediaFileId?.let(onDownloadMedia) },
-                    enabled = message.mediaFileId != null,
-                    modifier = Modifier.padding(top = 8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)
-                ) {
-                    Text(if (message.isMediaDownloaded) "Retry photo" else "Download photo")
-                }
+    if (showFullPreview && photoBitmap != null) Dialog(onDismissRequest = { showFullPreview = false }) {
+        Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF101820), RoundedCornerShape(16.dp)).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(bitmap = photoBitmap!!, contentDescription = "Full Telegram photo preview", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).clickable { showFullPreview = false })
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = { showFullPreview = false }) { Text("Close") }
+                if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load original") }
             }
         }
     }

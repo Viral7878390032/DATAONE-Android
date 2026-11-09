@@ -1638,6 +1638,33 @@ private fun AuthenticatedUserCard(
                                 }
                             }
                             Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+                                            .format(Date(selected.date * 1000L)),
+                                        color = TextPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        SimpleDateFormat("h:mm a", Locale.getDefault())
+                                            .format(Date(selected.date * 1000L)),
+                                        color = TextSecondary,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                Text(
+                                    if (selected.isOutgoing) "Sent" else "Received",
+                                    color = if (selected.isOutgoing) TelegramBlue else TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically

@@ -1634,18 +1634,19 @@ private fun AuthenticatedUserCard(
                     OutlinedTextField(
                         value = messageDraft,
                         onValueChange = onMessageDraftChange,
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Message", color = TextMuted) },
+                        modifier = Modifier.weight(1f).heightIn(min = 50.dp),
+                        placeholder = { Text("Write a message…", color = TextMuted, fontSize = 14.sp) },
                         maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = TelegramBlue,
                             unfocusedBorderColor = BorderHairline,
                             focusedTextColor = TextPrimary,
                             unfocusedTextColor = TextPrimary,
-                            focusedContainerColor = BackgroundDark,
-                            unfocusedContainerColor = BackgroundDark
+                            focusedContainerColor = SurfaceCard,
+                            unfocusedContainerColor = SurfaceCard,
+                            cursorColor = TelegramBlue
                         ),
-                        shape = RoundedCornerShape(24.dp)
+                        shape = RoundedCornerShape(20.dp)
                     )
                     IconButton(onClick = { photoPicker.launch("image/*") }, enabled = !isLoadingChats) {
                         Icon(Icons.Default.Image, contentDescription = "Choose photo", tint = TelegramBlue)
@@ -1791,14 +1792,25 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
     }
     if (photoBitmap != null) {
         Box {
-            Image(bitmap = photoBitmap!!, contentDescription = "Telegram photo preview", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().heightIn(min = 110.dp, max = 300.dp).clip(RoundedCornerShape(12.dp)).clickable { showFullPreview = true })
-            Row(modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).background(Color(0xAA101820), RoundedCornerShape(18.dp))) {
+            Image(
+                bitmap = photoBitmap!!,
+                contentDescription = "Telegram photo preview",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 120.dp, max = 320.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+                    .background(Color(0xFF111B27))
+                    .clickable { showFullPreview = true }
+            )
+            Row(modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).background(Color(0xE6101820), RoundedCornerShape(20.dp)).border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(20.dp))) {
                 if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load full image", color = Color.White, fontSize = 11.sp) }
                 else TextButton(onClick = { saveTelegramMediaToGallery(context, message.mediaFilePath, false) }) { Text("Save", color = Color.White, fontSize = 11.sp) }
             }
         }
     } else {
-        Column(modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp).clip(RoundedCornerShape(12.dp)).background(SurfaceCard).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.fillMaxWidth().heightIn(min = 132.dp).clip(RoundedCornerShape(16.dp)).background(SurfaceCard).border(1.dp, BorderHairline, RoundedCornerShape(16.dp)).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(if (message.isMediaDownloading) "Loading photo…" else "Photo preview", color = TextSecondary, fontSize = 13.sp)
             if (message.isMediaDownloading) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.padding(top = 10.dp).size(22.dp), strokeWidth = 2.dp)
             else Button(onClick = { (message.previewFileId ?: message.mediaFileId)?.let(onDownloadMedia) }, enabled = message.previewFileId != null || message.mediaFileId != null, modifier = Modifier.padding(top = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = TelegramBlue)) { Text("Preview image") }
@@ -1852,9 +1864,10 @@ private fun TelegramVideoContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(SurfaceCard)
-            .padding(10.dp)
+            .border(1.dp, BorderHairline, RoundedCornerShape(16.dp))
+            .padding(12.dp)
     ) {
         if (videoPath != null && isPlaying) {
             AndroidView(
@@ -1876,8 +1889,9 @@ private fun TelegramVideoContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 150.dp, max = 230.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .heightIn(min = 170.dp, max = 250.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
                     .background(Color(0xFF17212B)),
                 contentAlignment = Alignment.Center
             ) {

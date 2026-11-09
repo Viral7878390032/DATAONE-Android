@@ -1653,6 +1653,17 @@ private fun AuthenticatedUserCard(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
                                 )
                             }
+                            selected.mediaFilePath?.let { mediaPath ->
+                                val mediaFile = java.io.File(mediaPath)
+                                if (mediaFile.exists() && mediaFile.isFile) {
+                                    Text(
+                                        text = "File size · ${android.text.format.Formatter.formatShortFileSize(context, mediaFile.length())}",
+                                        color = TextSecondary,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,

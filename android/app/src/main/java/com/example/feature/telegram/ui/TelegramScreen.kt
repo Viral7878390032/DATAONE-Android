@@ -2164,9 +2164,16 @@ private fun AuthenticatedUserCard(
                     Box {
                         IconButton(
                             onClick = { showAttachmentMenu = true },
-                            enabled = !isLoadingChats && !isRecordingVoice
+                            enabled = !isLoadingChats && !isRecordingVoice,
+                            modifier = Modifier.size(42.dp).clip(CircleShape)
+                                .background(if (isLoadingChats || isRecordingVoice) SurfaceDark else SurfaceCard)
                         ) {
-                            Icon(Icons.Default.AttachFile, contentDescription = "Attach media or file", tint = TelegramBlue)
+                            Icon(
+                                Icons.Default.AttachFile,
+                                contentDescription = "Attach media or file",
+                                tint = if (isLoadingChats || isRecordingVoice) TextMuted else TelegramBlue,
+                                modifier = Modifier.size(19.dp)
+                            )
                         }
                         DropdownMenu(
                             expanded = showAttachmentMenu,

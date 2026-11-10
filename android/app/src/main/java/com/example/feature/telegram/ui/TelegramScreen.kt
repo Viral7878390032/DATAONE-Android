@@ -1616,7 +1616,38 @@ private fun AuthenticatedUserCard(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                         ) {
-                            items(filteredMessages, key = { it.id }) { message ->
+                            itemsIndexed(filteredMessages, key = { _, message -> message.id }) { index, message ->
+                                val messageDay = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(message.date * 1000L))
+                                val previousDay = filteredMessages.getOrNull(index - 1)?.let {
+                                    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.date * 1000L))
+                                }
+                                if (index == 0 || messageDay != previousDay) {
+                                    val todayKey = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                                    val yesterdayKey = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(System.currentTimeMillis() - 24L * 60L * 60L * 1000L))
+                                    val dayLabel = when (messageDay) {
+                                        todayKey -> "Today"
+                                        yesterdayKey -> "Yesterday"
+                                        else -> SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()).format(Date(message.date * 1000L))
+                                    }
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Surface(
+                                            color = SurfaceCard,
+                                            shape = RoundedCornerShape(50),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
+                                        ) {
+                                            Text(
+                                                dayLabel,
+                                                color = TextSecondary,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 5.dp)
+                                            )
+                                        }
+                                    }
+                                }
                                 var showMessageMenu by remember(message.id) { mutableStateOf(false) }
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),

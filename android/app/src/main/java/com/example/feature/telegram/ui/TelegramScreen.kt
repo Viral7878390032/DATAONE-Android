@@ -1542,6 +1542,16 @@ private fun AuthenticatedUserCard(
                         onValueChange = { conversationSearchQuery = it },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                         placeholder = { Text("Search messages in this chat", color = TextMuted) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null, tint = TelegramBlue, modifier = Modifier.size(18.dp))
+                        },
+                        trailingIcon = {
+                            if (conversationSearchQuery.isNotBlank()) {
+                                IconButton(onClick = { conversationSearchQuery = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear message search", tint = TextSecondary, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        },
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(

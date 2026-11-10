@@ -2280,7 +2280,12 @@ private fun SharedMediaGalleryGrid(
 ) {
     if (messages.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No shared media in this chat yet.", color = TextSecondary)
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Icon(Icons.Default.Collections, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(34.dp))
+                Spacer(Modifier.height(10.dp))
+                Text("No shared media yet", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text("Photos and videos shared here will appear in this gallery.", color = TextSecondary, fontSize = 12.sp)
+            }
         }
         return
     }
@@ -2291,9 +2296,9 @@ private fun SharedMediaGalleryGrid(
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(5.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         groupedMessages.forEach { (dayKey, dayMessages) ->
             item(span = { GridItemSpan(maxLineSpan) }, key = "day-$dayKey") {
@@ -2309,8 +2314,9 @@ private fun SharedMediaGalleryGrid(
                     text = label,
                     color = TextSecondary,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.fillMaxWidth().padding(start = 5.dp, top = 12.dp, bottom = 7.dp)
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.2.sp,
+                    modifier = Modifier.fillMaxWidth().padding(start = 7.dp, top = 14.dp, bottom = 8.dp)
                 )
             }
             items(dayMessages, key = { it.id }) { message ->
@@ -2356,10 +2362,10 @@ private fun SharedMediaGalleryGrid(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(13.dp))
+                        .height(132.dp)
+                        .clip(RoundedCornerShape(15.dp))
                         .background(SurfaceCard)
-                        .border(1.dp, BorderHairline.copy(alpha = 0.9f), RoundedCornerShape(13.dp))
+                        .border(1.dp, BorderHairline.copy(alpha = 0.95f), RoundedCornerShape(15.dp))
                         .clickable { onSelect(message) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -2389,7 +2395,7 @@ private fun SharedMediaGalleryGrid(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .height(42.dp)
+                             .height(48.dp)
                             .background(
                                 Brush.verticalGradient(
                                     listOf(Color.Transparent, Color(0xCC050A10))
@@ -2399,15 +2405,15 @@ private fun SharedMediaGalleryGrid(
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
-                            .padding(start = 7.dp, bottom = 6.dp),
+                            .padding(start = 9.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             if (message.mediaType == "video") "VIDEO" else "PHOTO",
                             color = Color.White,
-                            fontSize = 9.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.6.sp
+                            letterSpacing = 0.8.sp
                         )
                         if (!message.text.isNullOrBlank()) {
                             Spacer(modifier = Modifier.width(5.dp))
@@ -2421,8 +2427,9 @@ private fun SharedMediaGalleryGrid(
                     }
                     if (message.mediaType == "video") {
                         Box(
-                            modifier = Modifier.align(Alignment.Center).size(30.dp)
-                                .clip(CircleShape).background(Color(0xB9000000)),
+                            modifier = Modifier.align(Alignment.Center).size(36.dp)
+                                .clip(CircleShape).background(Color(0xD9000000))
+                                .border(1.dp, Color.White.copy(alpha = 0.7f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text("▶", color = Color.White, fontSize = 13.sp)

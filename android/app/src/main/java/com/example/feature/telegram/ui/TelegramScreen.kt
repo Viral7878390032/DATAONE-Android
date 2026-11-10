@@ -2144,7 +2144,7 @@ private fun AuthenticatedUserCard(
                     OutlinedTextField(
                         value = messageDraft,
                         onValueChange = onMessageDraftChange,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 50.dp).padding(vertical = 1.dp),
                         placeholder = { Text("Message", color = TextMuted, fontSize = 14.sp) },
                         maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(

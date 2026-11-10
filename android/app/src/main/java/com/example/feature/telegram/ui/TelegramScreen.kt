@@ -2137,6 +2137,11 @@ private fun AuthenticatedUserCard(
                         enabled = !isLoadingChats,
                         modifier = Modifier.size(42.dp).clip(CircleShape)
                             .background(if (isRecordingVoice) Color(0xFF4A2028) else SurfaceCard)
+                            .border(
+                                1.dp,
+                                if (isRecordingVoice) StatusError.copy(alpha = 0.45f) else BorderHairline,
+                                CircleShape
+                            )
                     ) {
                         Icon(
                             imageVector = if (isRecordingVoice) Icons.Default.Stop else Icons.Default.Mic,
@@ -2168,6 +2173,7 @@ private fun AuthenticatedUserCard(
                             enabled = !isLoadingChats && !isRecordingVoice,
                             modifier = Modifier.size(42.dp).clip(CircleShape)
                                 .background(if (isLoadingChats || isRecordingVoice) SurfaceDark else SurfaceCard)
+                                .border(1.dp, BorderHairline, CircleShape)
                         ) {
                             Icon(
                                 Icons.Default.AttachFile,

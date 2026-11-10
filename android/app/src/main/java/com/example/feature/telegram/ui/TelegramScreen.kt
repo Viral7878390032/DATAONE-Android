@@ -1390,7 +1390,13 @@ private fun AuthenticatedUserCard(
             } else {
                 val activeChat = chats.firstOrNull { it.id == selectedChatId }
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 8.dp, vertical = 9.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(SurfaceDark)
+                        .border(1.dp, BorderHairline, RoundedCornerShape(18.dp))
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onCloseChat, modifier = Modifier.size(40.dp)) {

@@ -1206,14 +1206,16 @@ private fun AuthenticatedUserCard(
                 ) {
                     OutlinedButton(
                         onClick = { showNewChatDialog = true },
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = TelegramBlue.copy(alpha = 0.12f)),
                         border = androidx.compose.foundation.BorderStroke(1.dp, TelegramBlue.copy(alpha = 0.55f))
                     ) { Text("+ New chat", color = Color(0xFF75C9F2), fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
                     Spacer(modifier = Modifier.width(8.dp))
                     OutlinedButton(
                         onClick = { sortChatsByName = !sortChatsByName },
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceCard),
                         border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
                     ) {

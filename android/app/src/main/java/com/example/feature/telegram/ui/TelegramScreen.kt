@@ -2106,8 +2106,9 @@ private fun AuthenticatedUserCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(BackgroundDark)
-                        .border(1.dp, BorderHairline.copy(alpha = 0.85f), RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(SurfaceDark)
+                        .border(1.dp, BorderHairline.copy(alpha = 0.95f), RoundedCornerShape(22.dp))
                         .padding(horizontal = 7.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

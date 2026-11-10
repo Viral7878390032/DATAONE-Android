@@ -1606,13 +1606,17 @@ private fun AuthenticatedUserCard(
                     )
                 } else {
                     if (isLoadingChats && messages.isEmpty()) {
-                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
+                        Box(Modifier.weight(1f).fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { Surface(shape = RoundedCornerShape(20.dp), color = SurfaceCard, border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)) { Column(Modifier.padding(horizontal = 28.dp, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) { CircularProgressIndicator(color = TelegramBlue, strokeWidth = 2.5.dp); Spacer(Modifier.height(12.dp)); Text("Loading messages", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium) } } }
                     } else if (filteredMessages.isEmpty()) {
-                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            Text(
-                                if (showSharedMedia) "No ${sharedMediaTab.lowercase()} found in the loaded messages." else if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
-                                color = TextSecondary
-                            )
+                        Box(Modifier.weight(1f).fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                            Surface(shape = RoundedCornerShape(18.dp), color = SurfaceCard, border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)) {
+                                Text(
+                                    if (showSharedMedia) "No ${sharedMediaTab.lowercase()} found in the loaded messages." else if (messages.isEmpty()) "No messages in this conversation." else "No messages match your search.",
+                                    color = TextSecondary,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 16.dp)
+                                )
+                            }
                         }
                     } else {
                         val conversationListState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -1661,13 +1665,14 @@ private fun AuthenticatedUserCard(
                                         else -> SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()).format(Date(message.date * 1000L))
                                     }
                                     Box(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 13.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Surface(
                                             color = SurfaceCard,
                                             shape = RoundedCornerShape(50),
-                                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline.copy(alpha = 0.85f)),
+                                            modifier = Modifier.padding(horizontal = 3.dp)
                                         ) {
                                             Text(
                                                 dayLabel,
@@ -2080,12 +2085,12 @@ private fun AuthenticatedUserCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 10.dp, vertical = 5.dp),
-                        shape = RoundedCornerShape(13.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = SurfaceCard,
                         border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
                     ) {
                         Row(
-                            modifier = Modifier.padding(start = 10.dp, end = 6.dp, top = 7.dp, bottom = 7.dp),
+                            modifier = Modifier.padding(start = 11.dp, end = 6.dp, top = 9.dp, bottom = 9.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
@@ -2172,7 +2177,7 @@ private fun AuthenticatedUserCard(
                     OutlinedTextField(
                         value = messageDraft,
                         onValueChange = onMessageDraftChange,
-                        modifier = Modifier.weight(1f).heightIn(min = 50.dp).padding(vertical = 1.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp).padding(vertical = 1.dp),
                         placeholder = { Text("Message", color = TextMuted, fontSize = 14.sp) },
                         maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(

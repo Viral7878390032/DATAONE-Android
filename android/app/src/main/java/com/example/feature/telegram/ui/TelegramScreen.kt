@@ -1692,9 +1692,29 @@ private fun AuthenticatedUserCard(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.End
                                             ) {
-                                                Text(formatTelegramChatTime(message.date), color = TextSecondary.copy(alpha = 0.85f), fontSize = 10.sp)
-                                                if (message.isOutgoing) {
-                                                    Text("  ✓✓", color = Color(0xFF79C9F0), fontSize = 11.sp)
+                                                Surface(
+                                                    color = Color.Black.copy(alpha = 0.13f),
+                                                    shape = RoundedCornerShape(50)
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            formatTelegramChatTime(message.date),
+                                                            color = TextSecondary.copy(alpha = 0.95f),
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                        if (message.isOutgoing) {
+                                                            Text(
+                                                                "  ✓✓",
+                                                                color = Color(0xFF79C9F0),
+                                                                fontSize = 11.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+                                                    }
                                                 }
                                                 Box {
                                                     IconButton(onClick = { showMessageMenu = true }, modifier = Modifier.size(27.dp)) {

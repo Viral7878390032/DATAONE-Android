@@ -2465,19 +2465,19 @@ private fun TelegramDocumentContent(
 
     Column(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-            .background(SurfaceCard).border(1.dp, BorderHairline, RoundedCornerShape(14.dp))
-            .padding(12.dp)
+            .background(SurfaceCard).border(1.dp, BorderHairline.copy(alpha = 0.95f), RoundedCornerShape(14.dp))
+            .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp))
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
                     .background(TelegramBlue.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.AttachFile, contentDescription = "Document", tint = TelegramBlue)
             }
             Column(Modifier.weight(1f).padding(start = 11.dp)) {
-                Text(fileName, color = TextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                Text(fileName, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 2)
                 Text("$extension  •  $sizeLabel", color = TextSecondary, fontSize = 11.sp)
             }
         }
@@ -2618,9 +2618,10 @@ private fun TelegramAudioContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(15.dp))
             .background(SurfaceCard)
-            .padding(12.dp)
+            .border(1.dp, BorderHairline, RoundedCornerShape(15.dp))
+            .padding(13.dp)
     ) {
         Text(
             if (message.mediaType == "voice") "Voice message" else "Audio",
@@ -2874,9 +2875,9 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 120.dp, max = 320.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+                    .heightIn(min = 140.dp, max = 340.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
                     .background(Color(0xFF111B27))
                     .clickable { showFullPreview = true }
             )
@@ -2949,7 +2950,7 @@ private fun TelegramVideoContent(
             .clip(RoundedCornerShape(16.dp))
             .background(SurfaceCard)
             .border(1.dp, BorderHairline, RoundedCornerShape(16.dp))
-            .padding(12.dp)
+            .padding(13.dp)
     ) {
         if (videoPath != null && isPlaying) {
             AndroidView(
@@ -2971,9 +2972,9 @@ private fun TelegramVideoContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 170.dp, max = 250.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+                    .heightIn(min = 180.dp, max = 260.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
                     .background(Color(0xFF17212B)),
                 contentAlignment = Alignment.Center
             ) {

@@ -2199,7 +2199,15 @@ private fun AuthenticatedUserCard(
                             .padding(start = 3.dp)
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) TelegramBlue else SurfaceCard)
+                            .background(
+                                Brush.linearGradient(
+                                    if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
+                                        listOf(TelegramBlue, TelegramBlueGradiantEnd)
+                                    } else {
+                                        listOf(SurfaceCard, SurfaceCard)
+                                    }
+                                )
+                            )
                     ) {
                         Icon(
                             Icons.Default.Send,

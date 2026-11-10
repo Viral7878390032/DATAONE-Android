@@ -63,6 +63,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
@@ -1223,7 +1224,14 @@ private fun AuthenticatedUserCard(
                     onValueChange = { chatSearchQuery = it },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
                     placeholder = { Text("Search chats or recent messages", color = TextMuted) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextMuted) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TelegramBlue, modifier = Modifier.size(19.dp)) },
+                    trailingIcon = {
+                        if (chatSearchQuery.isNotBlank()) {
+                            IconButton(onClick = { chatSearchQuery = "" }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear chat search", tint = TextSecondary, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    },
                     singleLine = true,
                     shape = RoundedCornerShape(18.dp),
                     colors = OutlinedTextFieldDefaults.colors(

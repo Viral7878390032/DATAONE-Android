@@ -1707,23 +1707,35 @@ private fun AuthenticatedUserCard(
                     Dialog(onDismissRequest = { selectedSharedMediaMessage = null }) {
                         Column(
                             modifier = Modifier.fillMaxWidth()
-                                .clip(RoundedCornerShape(18.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .background(BackgroundDark)
-                                .border(1.dp, BorderHairline, RoundedCornerShape(18.dp))
-                                .padding(10.dp)
+                                .border(1.dp, BorderHairline, RoundedCornerShape(20.dp))
+                                .padding(12.dp)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    "${if (selected.mediaType == "video") "Video" else "Photo"}" +
-                                        if (selectedIndex >= 0) "  ${selectedIndex + 1} of ${galleryItems.size}" else "",
-                                    color = TextPrimary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                TextButton(onClick = { selectedSharedMediaMessage = null }) { Text("Close", color = TelegramBlue) }
+                                Column {
+                                    Text(
+                                        if (selected.mediaType == "video") "VIDEO PREVIEW" else "PHOTO PREVIEW",
+                                        color = TextPrimary,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.7.sp
+                                    )
+                                    if (selectedIndex >= 0) {
+                                        Text(
+                                            "Item ${selectedIndex + 1} of ${galleryItems.size}",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                TextButton(onClick = { selectedSharedMediaMessage = null }) {
+                                    Text("Close", color = TelegramBlue, fontWeight = FontWeight.SemiBold)
+                                }
                             }
                             Box(
                                 modifier = Modifier.fillMaxWidth().pointerInput(selected.id, selectedIndex, galleryItems.size) {

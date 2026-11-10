@@ -23,6 +23,7 @@ import android.widget.VideoView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -2957,23 +2958,34 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
         }
     }
     var photoZoom by remember(message.id) { mutableStateOf(1f) }
-    val photoZoomState = rememberTransformableState { zoomChange, _, _ ->
-        photoZoom = (photoZoom * zoomChange).coerceIn(1f, 5f)
+    var photoPan by remember(message.id) { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    val photoZoomState = rememberTransformableState { zoomChange, panChange, _ ->
+        val nextZoom = (photoZoom * zoomChange).coerceIn(1f, 5f)
+        photoZoom = nextZoom
+        photoPan = if (nextZoom <= 1f) androidx.compose.ui.geometry.Offset.Zero else photoPan + panChange
     }
-    if (showFullPreview && photoBitmap != null) Dialog(onDismissRequest = { showFullPreview = false; photoZoom = 1f }) {
-        Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF101820), RoundedCornerShape(16.dp)).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    if (showFullPreview && photoBitmap != null) Dialog(
+        onDismissRequest = { showFullPreview = false; photoZoom = 1f; photoPan = androidx.compose.ui.geometry.Offset.Zero },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Column(modifier = Modifier.fillMaxSize().background(Color(0xFF05080D)).padding(horizontal = 12.dp, vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Image(
                 bitmap = photoBitmap!!,
                 contentDescription = "Full Telegram photo preview",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
-                    .heightIn(max = 520.dp)
-                    .graphicsLayer { scaleX = photoZoom; scaleY = photoZoom }
+                    .graphicsLayer { scaleX = photoZoom; scaleY = photoZoom; translationX = photoPan.x; translationY = photoPan.y }
                     .transformable(state = photoZoomState)
+                    .pointerInput(photoZoom) { detectTapGestures(onDoubleTap = {
+                        if (photoZoom > 1f) { photoZoom = 1f; photoPan = androidx.compose.ui.geometry.Offset.Zero }
+                        else photoZoom = 2.5f
+                    }) }
             )
+            Text("Pinch to zoom • Double-tap to zoom", color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(onClick = { showFullPreview = false }) { Text("Close") }
+                TextButton(onClick = { showFullPreview = false; photoZoom = 1f; photoPan = androidx.compose.ui.geometry.Offset.Zero }) { Text("Close") }
                 if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load original") }
                 else {
                     TextButton(onClick = { shareTelegramMedia(context, message.mediaFilePath, "photo") }) { Text("Share photo") }

@@ -2221,10 +2221,10 @@ private fun SharedMediaGalleryGrid(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(116.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(13.dp))
                         .background(SurfaceCard)
-                        .border(1.dp, BorderHairline, RoundedCornerShape(10.dp))
+                        .border(1.dp, BorderHairline.copy(alpha = 0.9f), RoundedCornerShape(13.dp))
                         .clickable { onSelect(message) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -2248,6 +2248,40 @@ private fun SharedMediaGalleryGrid(
                                 color = TextSecondary,
                                 fontSize = 10.sp
                             )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(42.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.Transparent, Color(0xCC050A10))
+                                )
+                            )
+                    )
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 7.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            if (message.mediaType == "video") "VIDEO" else "PHOTO",
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp
+                        )
+                        if (!message.text.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Box(
+                                modifier = Modifier.size(3.dp).clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.8f))
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("Caption", color = Color.White.copy(alpha = 0.88f), fontSize = 9.sp)
                         }
                     }
                     if (message.mediaType == "video") {

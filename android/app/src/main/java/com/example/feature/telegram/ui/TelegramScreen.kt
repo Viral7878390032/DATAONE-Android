@@ -3137,13 +3137,14 @@ private fun TelegramVideoContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF080D13), RoundedCornerShape(12.dp))
-                    .padding(12.dp),
+                    .background(Color(0xFF080D13))
+                    .padding(horizontal = 12.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 AndroidView(
                     factory = { viewContext ->
                         VideoView(viewContext).apply {
+                            keepScreenOn = true
                             setVideoPath(videoPath)
                             setMediaController(MediaController(viewContext).also { it.setAnchorView(this) })
                             setOnPreparedListener { player ->
@@ -3154,7 +3155,8 @@ private fun TelegramVideoContent(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 220.dp, max = 520.dp)
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),

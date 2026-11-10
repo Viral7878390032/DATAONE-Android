@@ -2490,8 +2490,8 @@ private fun TelegramDocumentContent(
             }
         } else if (!message.mediaFilePath.isNullOrBlank()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { openOrShareTelegramDocument(context, message.mediaFilePath, fileName, "open") }) {
-                    Text("Open", color = TelegramBlue)
+                TextButton(onClick = { openOrShareTelegramDocument(context, message.mediaFilePath, fileName, "open") }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
+                    Text("Open", color = TelegramBlue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 }
                 TextButton(onClick = { openOrShareTelegramDocument(context, message.mediaFilePath, fileName, "share") }) {
                     Text("Share", color = TelegramBlue)
@@ -2692,14 +2692,14 @@ private fun TelegramAudioContent(
                     },
                     valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
                     enabled = durationMs > 0,
-                    modifier = Modifier.fillMaxWidth().height(30.dp)
+                    modifier = Modifier.fillMaxWidth().height(36.dp)
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(formatTelegramAudioTime(positionMs.toInt()), color = TextSecondary, fontSize = 10.sp)
-                    Text(formatTelegramAudioTime(durationMs), color = TextSecondary, fontSize = 10.sp)
+                    Text(formatTelegramAudioTime(positionMs.toInt()), color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text(formatTelegramAudioTime(durationMs), color = TextSecondary, fontSize = 11.sp)
                 }
             }
             Row(
@@ -2881,7 +2881,7 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
                     .background(Color(0xFF111B27))
                     .clickable { showFullPreview = true }
             )
-            Row(modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).background(Color(0xE6101820), RoundedCornerShape(20.dp)).border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(20.dp))) {
+            Row(modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp).background(Color(0xF0101820), RoundedCornerShape(22.dp)).border(1.dp, Color.White.copy(alpha = 0.20f), RoundedCornerShape(22.dp)).padding(horizontal = 3.dp, vertical = 1.dp)) {
                 if (message.mediaFilePath.isNullOrBlank()) TextButton(onClick = { message.mediaFileId?.let(onDownloadMedia) }) { Text("Load full image", color = Color.White, fontSize = 11.sp) }
                 else {
                     TextButton(onClick = { shareTelegramMedia(context, message.mediaFilePath, "photo") }) { Text("Share", color = Color.White, fontSize = 11.sp) }
@@ -2963,7 +2963,8 @@ private fun TelegramVideoContent(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp)
+                    .height(250.dp)
+                    .clip(RoundedCornerShape(14.dp))
             )
             TextButton(onClick = { isPlaying = false }) {
                 Text("Close player")
@@ -2998,8 +2999,9 @@ private fun TelegramVideoContent(
                     IconButton(
                         onClick = { isPlaying = true },
                         modifier = Modifier
-                            .size(54.dp)
-                            .background(Color(0xCC000000), RoundedCornerShape(50))
+                            .size(60.dp)
+                            .background(Color(0xE6101820), RoundedCornerShape(50))
+                            .border(1.5.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(50))
                     ) {
                         Text("▶", color = Color.White, fontSize = 24.sp)
                     }
@@ -3028,16 +3030,16 @@ private fun TelegramVideoContent(
                 Text("Video", color = TextPrimary, fontWeight = FontWeight.Medium)
                 if (!videoPath.isNullOrBlank()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { showFullscreenPlayer = true }) {
-                            Text("Full screen")
+                        TextButton(onClick = { showFullscreenPlayer = true }, contentPadding = PaddingValues(horizontal = 9.dp, vertical = 6.dp)) {
+                            Text("Full screen", fontSize = 12.sp)
                         }
-                        TextButton(onClick = { shareTelegramMedia(context, videoPath, "video") }) {
-                            Text("Share")
+                        TextButton(onClick = { shareTelegramMedia(context, videoPath, "video") }, contentPadding = PaddingValues(horizontal = 9.dp, vertical = 6.dp)) {
+                            Text("Share", fontSize = 12.sp)
                         }
                         TextButton(onClick = {
                             saveTelegramMediaToGallery(context, videoPath, true)
-                        }) {
-                            Text("Save video")
+                        }, contentPadding = PaddingValues(horizontal = 9.dp, vertical = 6.dp)) {
+                            Text("Save video", fontSize = 12.sp)
                         }
                     }
                 }

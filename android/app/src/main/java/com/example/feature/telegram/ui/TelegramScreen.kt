@@ -2281,7 +2281,7 @@ private fun SharedMediaGalleryGrid(
     if (messages.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Icon(Icons.Default.Collections, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(34.dp))
+                Icon(Icons.Default.Image, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(34.dp))
                 Spacer(Modifier.height(10.dp))
                 Text("No shared media yet", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Text("Photos and videos shared here will appear in this gallery.", color = TextSecondary, fontSize = 12.sp)

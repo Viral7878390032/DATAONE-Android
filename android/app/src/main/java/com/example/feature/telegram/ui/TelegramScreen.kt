@@ -2294,11 +2294,11 @@ private fun SharedMediaGalleryGrid(
         SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(message.date * 1000L))
     }
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Adaptive(minSize = 104.dp),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         groupedMessages.forEach { (dayKey, dayMessages) ->
             item(span = { GridItemSpan(maxLineSpan) }, key = "day-$dayKey") {
@@ -2313,9 +2313,9 @@ private fun SharedMediaGalleryGrid(
                 Text(
                     text = label,
                     color = TextSecondary,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.2.sp,
+                    letterSpacing = 0.25.sp,
                     modifier = Modifier.fillMaxWidth().padding(start = 7.dp, top = 14.dp, bottom = 8.dp)
                 )
             }
@@ -2362,7 +2362,7 @@ private fun SharedMediaGalleryGrid(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(136.dp)
+                        .height(142.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(SurfaceCard)
                         .border(1.dp, BorderHairline.copy(alpha = 0.95f), RoundedCornerShape(15.dp))
@@ -2477,15 +2477,15 @@ private fun TelegramDocumentContent(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier.size(54.dp).clip(RoundedCornerShape(13.dp))
                     .background(TelegramBlue.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.AttachFile, contentDescription = "Document", tint = TelegramBlue)
             }
             Column(Modifier.weight(1f).padding(start = 11.dp)) {
-                Text(fileName, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 2)
-                Text("$extension  •  $sizeLabel", color = TextSecondary, fontSize = 11.sp)
+                Text(fileName, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 19.sp, maxLines = 2)
+                Text("$extension  •  $sizeLabel", color = TextSecondary, fontSize = 12.sp)
             }
         }
         Spacer(Modifier.height(8.dp))

@@ -1267,13 +1267,80 @@ private fun AuthenticatedUserCard(
                     ) { Text("Muted (${chats.count { !it.isArchived && it.isMuted }})", fontSize = 11.sp, maxLines = 1) }
                 }
                 if (chats.isEmpty() && isLoadingChats) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = TelegramBlue) }
+                    Box(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = SurfaceDark,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(color = TelegramBlue, strokeWidth = 2.5.dp)
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text("Loading conversations", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Text("Your Telegram chats will appear here.", color = TextSecondary, fontSize = 12.sp)
+                            }
+                        }
+                    }
                 } else if (filteredChats.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            if (chats.isEmpty()) "No chats found. Tap refresh to try again." else "No chats match your search.",
-                            color = TextSecondary
-                        )
+                    Box(
+                        modifier = Modifier.weight(1f).fillMaxWidth().padding(20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            color = SurfaceDark,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = if (chats.isEmpty()) Icons.Default.Refresh else Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = AccentCyan,
+                                    modifier = Modifier.size(30.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = if (chats.isEmpty()) "No conversations yet" else "No matching chats",
+                                    color = TextPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = if (chats.isEmpty()) "Pull to refresh or try loading your Telegram chats again." else "Try another name or clear your active filters.",
+                                    color = TextSecondary,
+                                    fontSize = 12.sp,
+                                    lineHeight = 18.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                TextButton(
+                                    onClick = {
+                                        if (chats.isEmpty()) {
+                                            onRefreshChats()
+                                        } else {
+                                            chatSearchQuery = ""
+                                            showUnreadOnly = false
+                                            showArchivedOnly = false
+                                            showMutedOnly = false
+                                        }
+                                    }
+                                ) {
+                                    Text(if (chats.isEmpty()) "Refresh chats" else "Clear search and filters", color = TelegramBlue, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
                     }
                 } else {
                     LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(bottom = 8.dp)) {

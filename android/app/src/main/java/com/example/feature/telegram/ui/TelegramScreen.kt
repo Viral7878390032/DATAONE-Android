@@ -1148,7 +1148,7 @@ private fun AuthenticatedUserCard(
                     Spacer(modifier = Modifier.width(11.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(user.displayName.ifBlank { user.firstName }, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Text(user.displayName.ifBlank { user.firstName }, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp, maxLines = 1)
                             if (user.isVerified) {
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("✓", color = TelegramBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold)
@@ -1476,11 +1476,11 @@ private fun AuthenticatedUserCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, BorderHairline, RoundedCornerShape(18.dp))
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                        .padding(horizontal = 9.dp, vertical = 7.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Brush.horizontalGradient(listOf(Color(0xFF172B42), SurfaceDark)))
+                        .border(1.dp, BorderHairline.copy(alpha = 0.9f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 9.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onCloseChat, modifier = Modifier.size(40.dp)) {
@@ -1492,8 +1492,9 @@ private fun AuthenticatedUserCard(
                         }
                     }
                     Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(TelegramBlue, AccentCyan))),
+                        modifier = Modifier.size(48.dp).clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(TelegramBlue, AccentCyan)))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         if (conversationAvatar != null) {
@@ -1515,7 +1516,7 @@ private fun AuthenticatedUserCard(
                         Text(
                             activeChat?.presenceText ?: "Tap to view profile",
                             color = if (activeChat?.isOnline == true) Color(0xFF35C875) else TextSecondary,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             maxLines = 1
                         )
                     }
@@ -1557,8 +1558,9 @@ private fun AuthenticatedUserCard(
                 if (showSharedMedia) {
                     Row(
                         modifier = Modifier.fillMaxWidth().background(SurfaceDark)
+                            .border(1.dp, BorderHairline.copy(alpha = 0.65f))
                             .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 10.dp, vertical = 7.dp),
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -1573,9 +1575,10 @@ private fun AuthenticatedUserCard(
                             val isSelected = sharedMediaTab == tab
                             Row(
                                 modifier = Modifier.clip(RoundedCornerShape(18.dp))
-                                    .background(if (isSelected) TelegramBlue.copy(alpha = 0.16f) else SurfaceCard)
+                                    .background(if (isSelected) TelegramBlue.copy(alpha = 0.18f) else SurfaceCard)
+                                    .border(1.dp, if (isSelected) TelegramBlue.copy(alpha = 0.55f) else BorderHairline, RoundedCornerShape(18.dp))
                                     .clickable { sharedMediaTab = tab; onLoadSharedMedia(tab) }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .padding(horizontal = 13.dp, vertical = 9.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
@@ -1640,7 +1643,7 @@ private fun AuthenticatedUserCard(
                                         )
                                     )
                                 ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
                         ) {
                             itemsIndexed(filteredMessages, key = { _, message -> message.id }) { index, message ->
                                 val continuesPrevious = filteredMessages.getOrNull(index - 1)?.isOutgoing == message.isOutgoing
@@ -1678,7 +1681,7 @@ private fun AuthenticatedUserCard(
                                 }
                                 var showMessageMenu by remember(message.id) { mutableStateOf(false) }
                                 Column(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
                                     horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start
                                 ) {
                                     Surface(

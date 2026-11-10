@@ -1907,15 +1907,50 @@ private fun AuthenticatedUserCard(
                     }
                 }
                 if (replyTarget != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().background(SurfaceDark).padding(horizontal = 16.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        shape = RoundedCornerShape(13.dp),
+                        color = SurfaceCard,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Replying to message", color = TelegramBlue, fontSize = 12.sp)
-                            Text(replyTarget?.text?.ifBlank { "Media message" }.orEmpty(), color = TextSecondary, maxLines = 1, fontSize = 13.sp)
+                        Row(
+                            modifier = Modifier.padding(start = 10.dp, end = 6.dp, top = 7.dp, bottom = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(3.dp)
+                                    .height(34.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(TelegramBlue)
+                            )
+                            Spacer(modifier = Modifier.width(9.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "REPLYING TO MESSAGE",
+                                    color = TelegramBlue,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.7.sp
+                                )
+                                Text(
+                                    replyTarget?.text?.takeIf { it.isNotBlank() }
+                                        ?: replyTarget?.mediaType?.let { "$it message" }
+                                        ?: "Message",
+                                    color = TextPrimary,
+                                    maxLines = 1,
+                                    fontSize = 13.sp
+                                )
+                            }
+                            TextButton(
+                                onClick = { replyTarget = null },
+                                contentPadding = PaddingValues(horizontal = 9.dp, vertical = 4.dp)
+                            ) {
+                                Text("×", color = TextSecondary, fontSize = 22.sp, lineHeight = 22.sp)
+                            }
                         }
-                        TextButton(onClick = { replyTarget = null }) { Text("Cancel") }
                     }
                 }
                 Row(

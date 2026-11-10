@@ -1134,7 +1134,8 @@ private fun AuthenticatedUserCard(
                     }
                     Box(
                         modifier = Modifier.size(48.dp).clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(TelegramBlue, AccentCyan))),
+                            .background(Brush.linearGradient(listOf(TelegramBlue, AccentCyan)))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         if (accountAvatar != null) {

@@ -1614,7 +1614,16 @@ private fun AuthenticatedUserCard(
                         }
                         LazyColumn(
                             state = conversationListState,
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            BackgroundDark,
+                                            Color(0xFF101C2A),
+                                            BackgroundDark
+                                        )
+                                    )
+                                ),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                         ) {
                             itemsIndexed(filteredMessages, key = { _, message -> message.id }) { index, message ->

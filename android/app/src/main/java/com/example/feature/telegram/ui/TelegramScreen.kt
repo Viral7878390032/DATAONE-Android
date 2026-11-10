@@ -2133,12 +2133,15 @@ private fun AuthenticatedUserCard(
                                 audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
                         },
-                        enabled = !isLoadingChats
+                        enabled = !isLoadingChats,
+                        modifier = Modifier.size(42.dp).clip(CircleShape)
+                            .background(if (isRecordingVoice) Color(0xFF4A2028) else SurfaceCard)
                     ) {
                         Icon(
                             imageVector = if (isRecordingVoice) Icons.Default.Stop else Icons.Default.Mic,
                             contentDescription = if (isRecordingVoice) "Stop and send voice message" else "Record voice message",
-                            tint = if (isRecordingVoice) Color(0xFFFF7777) else TelegramBlue
+                            tint = if (isRecordingVoice) Color(0xFFFF7777) else TelegramBlue,
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                     OutlinedTextField(

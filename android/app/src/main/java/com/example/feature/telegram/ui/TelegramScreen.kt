@@ -787,6 +787,9 @@ private fun AuthenticatedUserCard(
         } else Toast.makeText(context, "Microphone permission is required to record a voice message.", Toast.LENGTH_LONG).show()
     }
     var chatSearchQuery by remember { mutableStateOf("") }
+    var showTelegramSettings by remember { mutableStateOf(false) }
+    val telegramSettings = remember { context.getSharedPreferences("telegram_ui_settings", android.content.Context.MODE_PRIVATE) }
+    var highQualityMedia by remember { mutableStateOf(telegramSettings.getBoolean("high_quality_media", true)) }
     var showNewChatDialog by remember { mutableStateOf(false) }
     var contactSearchQuery by remember { mutableStateOf("") }
     var showCreateGroupDialog by remember { mutableStateOf(false) }
@@ -915,6 +918,32 @@ private fun AuthenticatedUserCard(
                 }
             },
             confirmButton = { TextButton(onClick = { showNewChatDialog = false }) { Text("Close", color = TelegramBlue) } }
+        )
+    }
+    if (showTelegramSettings) {
+        AlertDialog(
+            onDismissRequest = { showTelegramSettings = false },
+            containerColor = SurfaceCard,
+            title = { Text("Telegram settings", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("MEDIA & PERFORMANCE", color = TelegramBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("High-quality image previews", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text("Use larger image decoding for clearer previews. Original files remain unchanged.", color = TextSecondary, fontSize = 12.sp)
+                        }
+                        Checkbox(checked = highQualityMedia, onCheckedChange = { enabled ->
+                            highQualityMedia = enabled
+                            telegramSettings.edit().putBoolean("high_quality_media", enabled).apply()
+                        })
+                    }
+                    androidx.compose.material3.HorizontalDivider(color = BorderHairline)
+                    Text("Chat history is cached in memory while DATAONE is open. Older messages load progressively as you browse. Telegram media stays on-demand to protect device storage.", color = TextSecondary, fontSize = 12.sp, lineHeight = 18.sp)
+                    Text("Original photo and video files are downloaded only when you request them. Sending and receiving quality is controlled by Telegram.", color = TextSecondary, fontSize = 12.sp, lineHeight = 18.sp)
+                }
+            },
+            confirmButton = { TextButton(onClick = { showTelegramSettings = false }) { Text("Done", color = TelegramBlue) } }
         )
     }
     if (showChatDetails) {
@@ -1466,7 +1495,7 @@ private fun AuthenticatedUserCard(
                         Text("📞", fontSize = 19.sp)
                         Text("Calls", color = TextSecondary, fontSize = 10.sp)
                     }
-                    Column(Modifier.weight(1f).clickable { Toast.makeText(context, "Telegram settings are managed by your connected account.", Toast.LENGTH_SHORT).show() }, horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.weight(1f).clickable { showTelegramSettings = true }, horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("⚙️", fontSize = 19.sp)
                         Text("Settings", color = TextSecondary, fontSize = 10.sp)
                     }
@@ -2882,8 +2911,21 @@ private fun saveTelegramMediaToGallery(context: android.content.Context, path: S
 private fun TelegramPhotoContent(message: com.example.feature.telegram.model.TelegramMessage, onDownloadMedia: (Int) -> Unit) {
     val context = LocalContext.current
     var showFullPreview by remember(message.id) { mutableStateOf(false) }
-    val photoBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, key1 = message.mediaFilePath, key2 = message.previewFilePath) {
-        value = withContext(Dispatchers.IO) { val path = message.mediaFilePath ?: message.previewFilePath; path?.takeIf { it.isNotBlank() }?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() } }
+    val highQuality = remember { context.getSharedPreferences("telegram_ui_settings", android.content.Context.MODE_PRIVATE).getBoolean("high_quality_media", true) }
+    val photoBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, key1 = message.mediaFilePath, key2 = message.previewFilePath, key3 = highQuality) {
+        value = withContext(Dispatchers.IO) {
+            val path = message.mediaFilePath ?: message.previewFilePath
+            path?.takeIf { it.isNotBlank() }?.let {
+                runCatching {
+                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeFile(it, bounds)
+                    val maxDimension = if (highQuality) 2400 else 1200
+                    var sample = 1
+                    while (bounds.outWidth / sample > maxDimension || bounds.outHeight / sample > maxDimension) sample *= 2
+                    BitmapFactory.decodeFile(it, BitmapFactory.Options().apply { inSampleSize = sample })?.asImageBitmap()
+                }.getOrNull()
+            }
+        }
     }
     if (photoBitmap != null) {
         Box {

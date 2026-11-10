@@ -1674,6 +1674,7 @@ private fun AuthenticatedUserCard(
                                             0.7.dp,
                                             if (message.isOutgoing) Color(0xFF286887).copy(alpha = 0.85f) else Color(0xFF304154)
                                         ),
+                                        shadowElevation = 2.dp,
                                         modifier = Modifier.fillMaxWidth(0.82f)
                                     ) {
                                         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {

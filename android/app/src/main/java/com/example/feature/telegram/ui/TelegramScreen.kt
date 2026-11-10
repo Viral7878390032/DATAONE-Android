@@ -2362,8 +2362,8 @@ private fun SharedMediaGalleryGrid(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(132.dp)
-                        .clip(RoundedCornerShape(15.dp))
+                        .height(136.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(SurfaceCard)
                         .border(1.dp, BorderHairline.copy(alpha = 0.95f), RoundedCornerShape(15.dp))
                         .clickable { onSelect(message) },
@@ -2473,11 +2473,11 @@ private fun TelegramDocumentContent(
     Column(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
             .background(SurfaceCard).border(1.dp, BorderHairline.copy(alpha = 0.95f), RoundedCornerShape(14.dp))
-            .padding(14.dp)
+            .padding(15.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp))
                     .background(TelegramBlue.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -2628,12 +2628,13 @@ private fun TelegramAudioContent(
             .clip(RoundedCornerShape(15.dp))
             .background(SurfaceCard)
             .border(1.dp, BorderHairline, RoundedCornerShape(15.dp))
-            .padding(13.dp)
+            .padding(15.dp)
     ) {
         Text(
             if (message.mediaType == "voice") "Voice message" else "Audio",
             color = TextPrimary,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp
         )
         if (message.isMediaDownloading) {
             Text("Downloading audio...", color = TextSecondary, fontSize = 12.sp)
@@ -2882,7 +2883,7 @@ private fun TelegramPhotoContent(message: com.example.feature.telegram.model.Tel
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 140.dp, max = 340.dp)
+                    .heightIn(min = 150.dp, max = 360.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
                     .background(Color(0xFF111B27))
@@ -2980,7 +2981,7 @@ private fun TelegramVideoContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 180.dp, max = 260.dp)
+                    .heightIn(min = 190.dp, max = 270.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
                     .background(Color(0xFF17212B)),

@@ -1686,7 +1686,7 @@ private fun AuthenticatedUserCard(
                                 }
                                 var showMessageMenu by remember(message.id) { mutableStateOf(false) }
                                 Column(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start
                                 ) {
                                     Surface(
@@ -1704,10 +1704,10 @@ private fun AuthenticatedUserCard(
                                         shadowElevation = 2.dp,
                                         modifier = Modifier.fillMaxWidth(0.86f)
                                     ) {
-                                        Column(modifier = Modifier.padding(horizontal = 11.dp, vertical = 10.dp)) {
+                                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp)) {
                                             if (message.isPinned) {
                                                 Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp,
-                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp))
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
                                             }
                                             when (message.mediaType) {
                                                 "photo" -> TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
@@ -1720,17 +1720,17 @@ private fun AuthenticatedUserCard(
                                                     text = message.text,
                                                     color = TextPrimary,
                                                     fontSize = 14.5.sp,
-                                                    lineHeight = 21.sp,
-                                                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 5.dp)
+                                                    lineHeight = 22.sp,
+                                                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 6.dp)
                                                 )
                                             }
                                             Row(
-                                                modifier = Modifier.fillMaxWidth().padding(start = 3.dp, end = 1.dp, top = 3.dp),
+                                                modifier = Modifier.fillMaxWidth().padding(start = 3.dp, end = 1.dp, top = 5.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.End
                                             ) {
                                                 Surface(
-                                                    color = Color.Black.copy(alpha = 0.13f),
+                                                    color = Color.Black.copy(alpha = 0.18f),
                                                     shape = RoundedCornerShape(50)
                                                 ) {
                                                     Row(

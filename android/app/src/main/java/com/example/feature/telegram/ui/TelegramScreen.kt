@@ -1706,7 +1706,7 @@ private fun AuthenticatedUserCard(
                                     ) {
                                         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp)) {
                                             if (message.isPinned) {
-                                                Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp,
+                                                Text("📌 Pinned", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
                                             }
                                             when (message.mediaType) {
@@ -1734,7 +1734,7 @@ private fun AuthenticatedUserCard(
                                                     shape = RoundedCornerShape(50)
                                                 ) {
                                                     Row(
-                                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
                                                         Text(
@@ -1754,9 +1754,9 @@ private fun AuthenticatedUserCard(
                                                     }
                                                 }
                                                 Box {
-                                                    IconButton(onClick = { showMessageMenu = true }, modifier = Modifier.size(27.dp)) {
+                                                    IconButton(onClick = { showMessageMenu = true }, modifier = Modifier.size(30.dp)) {
                                                         Icon(Icons.Default.MoreVert, contentDescription = "Message actions",
-                                                            tint = TextSecondary, modifier = Modifier.size(17.dp))
+                                                            tint = TextSecondary.copy(alpha = 0.9f), modifier = Modifier.size(18.dp))
                                                     }
                                                     DropdownMenu(expanded = showMessageMenu, onDismissRequest = { showMessageMenu = false }) {
                                                         DropdownMenuItem(text = { Text("Reply") }, onClick = { replyTarget = message; showMessageMenu = false })
@@ -2212,22 +2212,22 @@ private fun AuthenticatedUserCard(
                             modifier = Modifier.background(SurfaceCard)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Photo", color = TextPrimary) },
-                                leadingIcon = { Icon(Icons.Default.Image, contentDescription = null, tint = TelegramBlue) },
+                                text = { Text("Photo", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
+                                leadingIcon = { Icon(Icons.Default.Image, contentDescription = null, tint = TelegramBlue, modifier = Modifier.size(20.dp)) },
                                 onClick = { showAttachmentMenu = false; photoPicker.launch("image/*") }
                             )
                             DropdownMenuItem(
-                                text = { Text("Video", color = TextPrimary) },
+                                text = { Text("Video", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
                                 leadingIcon = { Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = TelegramBlue) },
                                 onClick = { showAttachmentMenu = false; videoPicker.launch("video/*") }
                             )
                             DropdownMenuItem(
-                                text = { Text("Audio", color = TextPrimary) },
+                                text = { Text("Audio", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
                                 leadingIcon = { Icon(Icons.Default.Audiotrack, contentDescription = null, tint = TelegramBlue) },
                                 onClick = { showAttachmentMenu = false; audioPicker.launch("audio/*") }
                             )
                             DropdownMenuItem(
-                                text = { Text("File", color = TextPrimary) },
+                                text = { Text("File", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
                                 leadingIcon = { Icon(Icons.Default.AttachFile, contentDescription = null, tint = TelegramBlue) },
                                 onClick = { showAttachmentMenu = false; documentPicker.launch(arrayOf("*/*")) }
                             )

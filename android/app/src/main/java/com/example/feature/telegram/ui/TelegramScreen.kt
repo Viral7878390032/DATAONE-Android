@@ -2207,8 +2207,8 @@ private fun AuthenticatedUserCard(
                         onClick = { onSendMessage(replyTarget?.id); replyTarget = null },
                         enabled = messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice,
                         modifier = Modifier
-                            .padding(start = 3.dp)
-                            .size(42.dp)
+                            .padding(start = 4.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
                             .background(
                                 Brush.linearGradient(
@@ -2218,6 +2218,15 @@ private fun AuthenticatedUserCard(
                                         listOf(SurfaceCard, SurfaceCard)
                                     }
                                 )
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
+                                    Color.White.copy(alpha = 0.18f)
+                                } else {
+                                    BorderHairline
+                                },
+                                shape = CircleShape
                             )
                     ) {
                         Icon(

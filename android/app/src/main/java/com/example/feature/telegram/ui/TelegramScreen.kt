@@ -1123,8 +1123,8 @@ private fun AuthenticatedUserCard(
             if (selectedChatId == null) {
                 Row(
                     modifier = Modifier.fillMaxWidth().background(
-                        Brush.horizontalGradient(listOf(Color(0xFF142438), SurfaceDark))
-                    ).padding(horizontal = 14.dp, vertical = 12.dp),
+                        Brush.horizontalGradient(listOf(Color(0xFF172B42), SurfaceDark))
+                    ).border(1.dp, BorderHairline.copy(alpha = 0.65f), RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)).padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val accountAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, user.profilePhotoLocalPath) {
@@ -1167,16 +1167,16 @@ private fun AuthenticatedUserCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 8.dp),
+                        .padding(start = 18.dp, end = 18.dp, top = 20.dp, bottom = 9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Messages",
                             color = TextPrimary,
-                            fontSize = 25.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = (-0.4).sp
+                            letterSpacing = (-0.5).sp
                         )
                         Text(
                             "${chats.size} conversations  •  ${unreadChatsCount} unread",
@@ -1225,7 +1225,7 @@ private fun AuthenticatedUserCard(
                 OutlinedTextField(
                     value = chatSearchQuery,
                     onValueChange = { chatSearchQuery = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 7.dp),
                     placeholder = { Text("Search chats or recent messages", color = TextMuted) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TelegramBlue, modifier = Modifier.size(19.dp)) },
                     trailingIcon = {
@@ -1366,11 +1366,11 @@ private fun AuthenticatedUserCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(SurfaceDark)
-                                    .border(1.dp, BorderHairline.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Brush.horizontalGradient(listOf(SurfaceCard, SurfaceDark)))
+                                    .border(1.dp, BorderHairline.copy(alpha = 0.82f), RoundedCornerShape(20.dp))
                                     .clickable { onOpenChat(chat.id) }
-                                    .padding(horizontal = 12.dp, vertical = 11.dp),
+                                    .padding(horizontal = 13.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val chatAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, chat.photoFilePath) {
@@ -1379,7 +1379,7 @@ private fun AuthenticatedUserCard(
                                     }
                                 }
                                 Box(
-                                    modifier = Modifier.size(52.dp).clip(CircleShape)
+                                    modifier = Modifier.size(54.dp).clip(CircleShape)
                                         .background(Brush.linearGradient(listOf(TelegramBlue.copy(alpha = 0.9f), AccentCyan.copy(alpha = 0.65f)))),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -1415,6 +1415,7 @@ private fun AuthenticatedUserCard(
                                             chat.presenceText ?: chat.lastMessage.ifBlank { " " },
                                             color = if (chat.isOnline) Color(0xFF35C875) else TextSecondary,
                                             fontSize = 13.sp,
+                                            lineHeight = 18.sp,
                                             maxLines = 1,
                                             modifier = Modifier.weight(1f)
                                         )

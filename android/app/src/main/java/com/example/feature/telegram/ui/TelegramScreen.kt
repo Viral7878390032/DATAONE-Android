@@ -1627,6 +1627,8 @@ private fun AuthenticatedUserCard(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                         ) {
                             itemsIndexed(filteredMessages, key = { _, message -> message.id }) { index, message ->
+                                val continuesPrevious = filteredMessages.getOrNull(index - 1)?.isOutgoing == message.isOutgoing
+                                val continuesNext = filteredMessages.getOrNull(index + 1)?.isOutgoing == message.isOutgoing
                                 val messageDay = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(message.date * 1000L))
                                 val previousDay = filteredMessages.getOrNull(index - 1)?.let {
                                     SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.date * 1000L))
@@ -1666,9 +1668,10 @@ private fun AuthenticatedUserCard(
                                     Surface(
                                         color = if (message.isOutgoing) Color(0xFF174E6B) else Color(0xFF1B2634),
                                         shape = RoundedCornerShape(
-                                            topStart = 19.dp, topEnd = 19.dp,
-                                            bottomStart = if (message.isOutgoing) 19.dp else 6.dp,
-                                            bottomEnd = if (message.isOutgoing) 6.dp else 19.dp
+                                            topStart = if (!message.isOutgoing && continuesPrevious) 6.dp else 19.dp,
+                                            topEnd = if (message.isOutgoing && continuesPrevious) 6.dp else 19.dp,
+                                            bottomStart = if (!message.isOutgoing && continuesNext) 6.dp else 19.dp,
+                                            bottomEnd = if (message.isOutgoing && continuesNext) 6.dp else 19.dp
                                         ),
                                         border = androidx.compose.foundation.BorderStroke(
                                             0.7.dp,

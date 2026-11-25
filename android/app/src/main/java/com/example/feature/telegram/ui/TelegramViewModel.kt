@@ -257,89 +257,79 @@ class TelegramViewModel(
         }
     }
 
-    fun sendPhotoMessage(path: String) {
+    /**
+     * Runs every outgoing message through one guarded path. The guard is released even
+     * when a repository implementation throws, and a send finishing after the user
+     * switches chats will never erase the new chat's draft.
+     */
+    private fun performMessageSend(
+        chatId: Long,
+        clearDraftOnSuccess: Boolean = true,
+        send: suspend () -> Result<Unit>
+    ) {
         if (!beginSendingMessage()) return
-        val chatId = _uiState.value.selectedChatId ?: return
-        if (path.isBlank()) return
-        val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            val result = repository.sendPhotoMessage(chatId, path, caption)
-            _uiState.update {
-                it.copy(
+            val result = try {
+                send()
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            _uiState.update { current ->
+                val succeeded = result.isSuccess
+                val stillInSendingChat = current.selectedChatId == chatId
+                current.copy(
                     isSendingMessage = false,
-                    messageDraft = if (result.isSuccess) "" else it.messageDraft,
-                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
+                    messageDraft = if (succeeded && clearDraftOnSuccess && stillInSendingChat) "" else current.messageDraft,
+                    chatDrafts = if (succeeded && clearDraftOnSuccess) current.chatDrafts - chatId else current.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
                 )
             }
             repository.saveChatDrafts(_uiState.value.chatDrafts)
         }
+    }
+
+    fun sendPhotoMessage(path: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        if (path.isBlank()) return
+        val caption = _uiState.value.messageDraft.trim()
+        performMessageSend(chatId) { repository.sendPhotoMessage(chatId, path, caption) }
     }
 
     fun sendVideoMessage(path: String) {
-        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
-        viewModelScope.launch {
-            val result = repository.sendVideoMessage(chatId, path, caption)
-            _uiState.update {
-                it.copy(
-                    isSendingMessage = false,
-                    messageDraft = if (result.isSuccess) "" else it.messageDraft,
-                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
-                    errorMessage = result.exceptionOrNull()?.message
-                )
-            }
-            repository.saveChatDrafts(_uiState.value.chatDrafts)
-        }
+        performMessageSend(chatId) { repository.sendVideoMessage(chatId, path, caption) }
     }
 
     fun sendAudioMessage(path: String) {
-        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
-        viewModelScope.launch {
-            val result = repository.sendAudioMessage(chatId, path, caption)
-            _uiState.update {
-                it.copy(
-                    isSendingMessage = false,
-                    messageDraft = if (result.isSuccess) "" else it.messageDraft,
-                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
-                    errorMessage = result.exceptionOrNull()?.message
-                )
-            }
-            repository.saveChatDrafts(_uiState.value.chatDrafts)
-        }
+        performMessageSend(chatId) { repository.sendAudioMessage(chatId, path, caption) }
     }
 
     fun sendVoiceMessage(path: String, durationSeconds: Int) {
-        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
-        viewModelScope.launch {
-            val result = repository.sendVoiceMessage(chatId, path, durationSeconds)
-            _uiState.update { it.copy(isSendingMessage = false, errorMessage = result.exceptionOrNull()?.message) }
+        performMessageSend(chatId, clearDraftOnSuccess = false) {
+            repository.sendVoiceMessage(chatId, path, durationSeconds)
         }
     }
 
     fun sendDocumentMessage(path: String) {
-        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
-        viewModelScope.launch {
-            val result = repository.sendDocumentMessage(chatId, path, caption)
-            _uiState.update {
-                it.copy(
-                    isSendingMessage = false,
-                    messageDraft = if (result.isSuccess) "" else it.messageDraft,
-                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
-                    errorMessage = result.exceptionOrNull()?.message
-                )
-            }
-            repository.saveChatDrafts(_uiState.value.chatDrafts)
+        performMessageSend(chatId) { repository.sendDocumentMessage(chatId, path, caption) }
+    }
+
+    fun sendMessage(replyToMessageId: Long? = null) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        val text = _uiState.value.messageDraft.trim()
+        if (text.isBlank()) return
+        performMessageSend(chatId) {
+            repository.sendTextMessage(chatId, text, replyToMessageId)
         }
     }
 

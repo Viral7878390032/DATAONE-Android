@@ -713,13 +713,16 @@ class NativeTdLibBridge : TelegramClientBridge {
         val animation = (messageContent as? TdApi.MessageAnimation)?.animation
         val animationFile = animation?.animation
         val animationPreviewFile = animation?.thumbnail?.file
+        val sticker = (messageContent as? TdApi.MessageSticker)?.sticker
+        val stickerFile = sticker?.sticker
         val document = (messageContent as? TdApi.MessageDocument)?.document
         val documentFile = document?.document
-        val localFile = photoFile?.local ?: videoFile?.local ?: animationFile?.local ?: documentFile?.local ?: audioFile?.local
+        val localFile = photoFile?.local ?: videoFile?.local ?: animationFile?.local ?: stickerFile?.local ?: documentFile?.local ?: audioFile?.local
         val mediaType = when {
             photoFile != null -> "photo"
             videoFile != null -> "video"
             animationFile != null -> "animation"
+            stickerFile != null -> "sticker"
             documentFile != null -> "document"
             messageContent is TdApi.MessageAudio -> "audio"
             messageContent is TdApi.MessageVoiceNote -> "voice"
@@ -749,13 +752,13 @@ class NativeTdLibBridge : TelegramClientBridge {
             isOutgoing = message.isOutgoing,
             isPinned = message.isPinned,
             mediaType = mediaType,
-            mediaFileId = photoFile?.id ?: videoFile?.id ?: animationFile?.id ?: documentFile?.id ?: audioFile?.id,
+            mediaFileId = photoFile?.id ?: videoFile?.id ?: animationFile?.id ?: stickerFile?.id ?: documentFile?.id ?: audioFile?.id,
             mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true,
             previewFileId = previewFile?.id ?: videoPreviewFile?.id ?: animationPreviewFile?.id,
             previewFilePath = (previewFile?.local ?: videoPreviewFile?.local ?: animationPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
-            mediaFileName = document?.fileName ?: video?.fileName ?: animation?.fileName
+            mediaFileName = document?.fileName ?: video?.fileName ?: animation?.fileName ?: sticker?.emoji
         )
     }
 

@@ -47,6 +47,9 @@ class NativeTdLibBridge : TelegramClientBridge {
     private val messageCache = LinkedHashMap<Long, List<TelegramMessage>>()
     @Volatile private var isLoadingOlderHistory = false
     @Volatile private var hasMoreChatHistory = true
+    // Search and shared-media results are not a chronological chat-history page.
+    // Keep pagination disabled until the normal conversation is restored.
+    @Volatile private var isShowingFilteredMessages = false
 
     private val nativeLoaded = AtomicBoolean(false)
     override val isNativeLibraryAvailable: Boolean
@@ -469,6 +472,7 @@ class NativeTdLibBridge : TelegramClientBridge {
     override suspend fun openChat(chatId: Long): Result<Unit> = try {
         require(chatId != 0L) { "Select a valid Telegram chat." }
         selectedChatId = chatId
+        isShowingFilteredMessages = false
         hasMoreChatHistory = true
         isLoadingOlderHistory = false
         // Restore cached messages immediately when returning to a conversation.
@@ -504,6 +508,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             request.limit = 100
             val result = sendRequest(request) as TdApi.FoundChatMessages
             if (selectedChatId == chatId) {
+                isShowingFilteredMessages = true
                 _messages.value = result.messages.reversed().map(::toTelegramMessage)
             }
         }
@@ -530,14 +535,17 @@ class NativeTdLibBridge : TelegramClientBridge {
             request.filter = filter
             (sendRequest(request) as TdApi.FoundChatMessages).messages.toList()
         }.distinctBy { it.id }.sortedBy { it.date }
-        if (selectedChatId == chatId) _messages.value = found.map(::toTelegramMessage)
+        if (selectedChatId == chatId) {
+            isShowingFilteredMessages = true
+            _messages.value = found.map(::toTelegramMessage)
+        }
         Result.success(Unit)
     } catch (error: Throwable) {
         Result.failure(error)
     }
 
     override suspend fun loadOlderMessages(chatId: Long): Result<Unit> {
-        if (chatId != selectedChatId || isLoadingOlderHistory || !hasMoreChatHistory) return Result.success(Unit)
+        if (chatId != selectedChatId || isShowingFilteredMessages || isLoadingOlderHistory || !hasMoreChatHistory) return Result.success(Unit)
         val oldestMessageId = _messages.value.firstOrNull()?.id ?: return Result.success(Unit)
         isLoadingOlderHistory = true
         return try {

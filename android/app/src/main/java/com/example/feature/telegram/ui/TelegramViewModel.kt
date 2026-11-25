@@ -248,15 +248,13 @@ class TelegramViewModel(
     }
 
     private fun beginSendingMessage(): Boolean {
-        var started = false
-        _uiState.update { current ->
-            if (current.isSendingMessage) current
-            else {
-                started = true
-                current.copy(isSendingMessage = true, errorMessage = null)
-            }
+        // Use compareAndSet so simultaneous taps cannot both pass the guard.
+        while (true) {
+            val current = _uiState.value
+            if (current.isSendingMessage) return false
+            val sending = current.copy(isSendingMessage = true, errorMessage = null)
+            if (_uiState.compareAndSet(current, sending)) return true
         }
-        return started
     }
 
     fun sendPhotoMessage(path: String) {

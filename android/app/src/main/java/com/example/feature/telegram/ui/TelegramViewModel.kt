@@ -252,11 +252,11 @@ class TelegramViewModel(
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendPhotoMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
-                    isLoadingChats = false,
+                    isSendingMessage = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
                     chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
@@ -271,11 +271,11 @@ class TelegramViewModel(
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendVideoMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
-                    isLoadingChats = false,
+                    isSendingMessage = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
                     chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
@@ -290,11 +290,11 @@ class TelegramViewModel(
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendAudioMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
-                    isLoadingChats = false,
+                    isSendingMessage = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
                     chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
@@ -308,9 +308,9 @@ class TelegramViewModel(
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendVoiceMessage(chatId, path, durationSeconds)
-            _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
+            _uiState.update { it.copy(isSendingMessage = false, errorMessage = result.exceptionOrNull()?.message) }
         }
     }
 
@@ -319,11 +319,11 @@ class TelegramViewModel(
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendDocumentMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
-                    isLoadingChats = false,
+                    isSendingMessage = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
                     chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message
@@ -368,11 +368,11 @@ class TelegramViewModel(
         val text = _uiState.value.messageDraft.trim()
         if (text.isBlank()) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
+            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendTextMessage(chatId, text, replyToMessageId)
             _uiState.update {
                 it.copy(
-                    isLoadingChats = false,
+                    isSendingMessage = false,
                     messageDraft = if (result.isSuccess) "" else it.messageDraft,
                     chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
                     errorMessage = result.exceptionOrNull()?.message

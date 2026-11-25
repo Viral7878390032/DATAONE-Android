@@ -341,20 +341,27 @@ class NativeTdLibBridge : TelegramClientBridge {
 
     override suspend fun searchContacts(query: String): Result<List<TelegramUser>> = try {
         val result = sendRequest(TdApi.SearchContacts(query.trim(), 100)) as TdApi.Users
-        val contacts = mutableListOf<TelegramUser>()
-        for (userId in result.userIds) {
-            val contact = runCatching {
-                val user = sendRequest(TdApi.GetUser(userId)) as TdApi.User
-                TelegramUser(
-                    id = user.id,
-                    firstName = user.firstName,
-                    lastName = user.lastName,
-                    username = user.usernames?.activeUsernames?.firstOrNull(),
-                    phoneNumber = user.phoneNumber,
-                    isPremium = user.isPremium
-                )
-            }.getOrNull()
-            if (contact != null) contacts.add(contact)
+        // Hydrate contact cards concurrently with a strict limit instead of waiting
+        // for up to 100 GetUser requests one-by-one.
+        val semaphore = Semaphore(12)
+        val contacts = coroutineScope {
+            result.userIds.map { userId ->
+                async {
+                    semaphore.withPermit {
+                        runCatching {
+                            val user = sendRequest(TdApi.GetUser(userId)) as TdApi.User
+                            TelegramUser(
+                                id = user.id,
+                                firstName = user.firstName,
+                                lastName = user.lastName,
+                                username = user.usernames?.activeUsernames?.firstOrNull(),
+                                phoneNumber = user.phoneNumber,
+                                isPremium = user.isPremium
+                            )
+                        }.getOrNull()
+                    }
+                }
+            }.awaitAll().filterNotNull()
         }
         Result.success(contacts)
     } catch (error: Throwable) { Result.failure(error) }

@@ -849,28 +849,32 @@ private fun AuthenticatedUserCard(
     }
     val audioPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
+            var recorder: MediaRecorder? = null
+            var outputFile: File? = null
             try {
                 if (Build.VERSION.SDK_INT < 29) {
                     Toast.makeText(context, "Voice-note recording requires Android 10 or newer.", Toast.LENGTH_LONG).show()
                 } else {
-                    val file = File(context.cacheDir, "telegram-voice-${System.currentTimeMillis()}.ogg")
-                    val recorder = MediaRecorder()
+                    outputFile = File(context.cacheDir, "telegram-voice-${System.currentTimeMillis()}.ogg")
+                    recorder = MediaRecorder()
                     recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
                     recorder.setOutputFormat(MediaRecorder.OutputFormat.OGG)
                     recorder.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS)
                     recorder.setAudioSamplingRate(48000)
                     recorder.setAudioEncodingBitRate(64000)
-                    recorder.setOutputFile(file.absolutePath)
+                    recorder.setOutputFile(outputFile.absolutePath)
                     recorder.prepare()
                     recorder.start()
-                    voiceRecordingFile = file
+                    voiceRecordingFile = outputFile
                     voiceRecorder = recorder
                     voiceRecordingStartedAt = System.currentTimeMillis()
                     isRecordingVoice = true
                 }
             } catch (error: Exception) {
-                voiceRecorder?.release()
+                runCatching { recorder?.release() }
+                runCatching { outputFile?.delete() }
                 voiceRecorder = null
+                voiceRecordingFile = null
                 isRecordingVoice = false
                 Toast.makeText(context, error.message ?: "Unable to start recording.", Toast.LENGTH_LONG).show()
             }

@@ -1,60 +1,6 @@
 package com.example.feature.telegram.ui
 
 
-/**
- * Copies a picker URI into app-private cache before handing it to TDLib.
- * Keep the provider's real filename/extension so Telegram can identify formats
- * such as PNG, WEBP, MOV and M4A correctly instead of receiving a renamed JPG/MP4.
- */
-private fun copyTelegramAttachment(
-    context: android.content.Context,
-    uri: android.net.Uri,
-    prefix: String,
-    fallbackExtension: String
-): File? {
-    return runCatching {
-        val resolver = context.contentResolver
-        val displayName = resolver.query(
-            uri,
-            arrayOf(OpenableColumns.DISPLAY_NAME),
-            null,
-            null,
-            null
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) cursor.getString(0) else null
-        }
-        val mimeType = resolver.getType(uri)
-        val mimeExtension = android.webkit.MimeTypeMap.getSingleton()
-            .getExtensionFromMimeType(mimeType)
-        val originalName = displayName
-            ?.replace(Regex("[^A-Za-z0-9._ -]"), "_")
-            ?.trim()
-            ?.take(100)
-            ?.takeIf { it.isNotBlank() }
-        val extension = originalName
-            ?.substringAfterLast('.', "")
-            ?.takeIf { it.isNotBlank() && it.length <= 10 }
-            ?: mimeExtension
-            ?: fallbackExtension
-        val baseName = originalName
-            ?.substringBeforeLast('.', originalName)
-            ?.takeIf { it.isNotBlank() }
-            ?: prefix
-        val safeBase = baseName.take(80).ifBlank { prefix }
-        val destination = File(
-            context.cacheDir,
-            "telegram-$prefix-${System.currentTimeMillis()}-$safeBase.$extension"
-        )
-        val input = resolver.openInputStream(uri) ?: return null
-        input.use { source ->
-            destination.outputStream().use { output -> source.copyTo(output) }
-        }
-        destination.takeIf { it.isFile && it.length() > 0L } ?: run {
-            destination.delete()
-            null
-        }
-    }.getOrNull()
-}
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -195,6 +141,61 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+/**
+ * Copies a picker URI into app-private cache before handing it to TDLib.
+ * Keep the provider's real filename/extension so Telegram can identify formats
+ * such as PNG, WEBP, MOV and M4A correctly instead of receiving a renamed JPG/MP4.
+ */
+private fun copyTelegramAttachment(
+    context: android.content.Context,
+    uri: android.net.Uri,
+    prefix: String,
+    fallbackExtension: String
+): File? {
+    return runCatching {
+        val resolver = context.contentResolver
+        val displayName = resolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        }
+        val mimeType = resolver.getType(uri)
+        val mimeExtension = android.webkit.MimeTypeMap.getSingleton()
+            .getExtensionFromMimeType(mimeType)
+        val originalName = displayName
+            ?.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+            ?.trim()
+            ?.take(100)
+            ?.takeIf { it.isNotBlank() }
+        val extension = originalName
+            ?.substringAfterLast('.', "")
+            ?.takeIf { it.isNotBlank() && it.length <= 10 }
+            ?: mimeExtension
+            ?: fallbackExtension
+        val baseName = originalName
+            ?.substringBeforeLast('.', originalName)
+            ?.takeIf { it.isNotBlank() }
+            ?: prefix
+        val safeBase = baseName.take(80).ifBlank { prefix }
+        val destination = File(
+            context.cacheDir,
+            "telegram-$prefix-${System.currentTimeMillis()}-$safeBase.$extension"
+        )
+        val input = resolver.openInputStream(uri) ?: return null
+        input.use { source ->
+            destination.outputStream().use { output -> source.copyTo(output) }
+        }
+        destination.takeIf { it.isFile && it.length() > 0L } ?: run {
+            destination.delete()
+            null
+        }
+    }.getOrNull()
+}
 
 // Premium Dark Theme Palette for DATAONE Telegram Module
 private val BackgroundDark = Color(0xFF0B111A)

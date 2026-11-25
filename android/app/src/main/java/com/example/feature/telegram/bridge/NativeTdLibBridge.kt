@@ -377,11 +377,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     photoFilePath = completedPhotoPath,
                                     presenceText = presence?.first,
                                     isOnline = presence?.second == true
-                                ).also {
-                                    if (photoFile != null && photoLocal?.isDownloadingCompleted != true) {
-                                        runCatching { sendRequest(TdApi.DownloadFile(photoFile.id, 16, 0, 0, false)) }
-                                    }
-                                }
+                                )
                             } catch (error: Throwable) {
                                 Log.w(tag, "Could not load Telegram chat $id", error)
                                 null
@@ -487,12 +483,8 @@ class NativeTdLibBridge : TelegramClientBridge {
             _messages.value = merged
             synchronized(messageCache) { messageCache[chatId] = merged }
             hasMoreChatHistory = page.messages.size >= 80
-            // Download only small previews in the background, never while waiting for first paint.
-            scope.launch {
-                latest.asSequence().mapNotNull { it.previewFileId?.takeIf { fileId -> fileId > 0 } }.distinct().take(16).forEach { fileId ->
-                    runCatching { sendRequest(TdApi.DownloadFile(fileId, 8, 0, 0, false)) }
-                }
-            }
+            // Media previews remain on-demand: the UI starts a download only after
+            // the user taps Preview/Download. This avoids background data usage.
             if (page.messages.isNotEmpty()) sendRequest(TdApi.ViewMessages(chatId, page.messages.map { it.id }.toLongArray(), null, true))
         }
         Result.success(Unit)

@@ -839,16 +839,17 @@ private fun AuthenticatedUserCard(
         linkPattern.containsMatchIn(message.text)
     }
     val sharedMediaMessages = messages.filter { message ->
-        message.mediaType in listOf("photo", "video", "audio", "voice", "document") || isSharedLink(message)
+        message.mediaType in listOf("photo", "video", "animation", "sticker", "audio", "voice", "document") || isSharedLink(message)
     }
     val filteredMessages = messages.filter { message ->
         val matchesSearch = message.text.contains(conversationSearchQuery, ignoreCase = true)
         val matchesTab = !showSharedMedia || when (sharedMediaTab) {
-            "Photos" -> message.mediaType == "photo"
+            "Photos" -> message.mediaType in listOf("photo", "sticker")
             "Videos" -> message.mediaType == "video"
+            "GIFs" -> message.mediaType == "animation"
             "Files" -> message.mediaType in listOf("document", "audio", "voice")
             "Links" -> isSharedLink(message)
-            else -> message.mediaType in listOf("photo", "video", "audio", "voice", "document") || isSharedLink(message)
+            else -> message.mediaType in listOf("photo", "video", "animation", "sticker", "audio", "voice", "document") || isSharedLink(message)
         }
         matchesSearch && matchesTab
     }
@@ -1606,10 +1607,11 @@ private fun AuthenticatedUserCard(
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        listOf("All", "Photos", "Videos", "Files", "Links").forEach { tab ->
+                        listOf("All", "Photos", "Videos", "GIFs", "Files", "Links").forEach { tab ->
                             val tabCount = when (tab) {
-                                "Photos" -> sharedMediaMessages.count { it.mediaType == "photo" }
+                                "Photos" -> sharedMediaMessages.count { it.mediaType in listOf("photo", "sticker") }
                                 "Videos" -> sharedMediaMessages.count { it.mediaType == "video" }
+                                "GIFs" -> sharedMediaMessages.count { it.mediaType == "animation" }
                                 "Files" -> sharedMediaMessages.count { it.mediaType in listOf("document", "audio", "voice") }
                                 "Links" -> sharedMediaMessages.count { isSharedLink(it) }
                                 else -> sharedMediaMessages.size
@@ -1641,7 +1643,7 @@ private fun AuthenticatedUserCard(
                         }
                     }
                 }
-                if (showSharedMedia && sharedMediaTab in listOf("Photos", "Videos")) {
+                if (showSharedMedia && sharedMediaTab in listOf("Photos", "Videos", "GIFs")) {
                     SharedMediaGalleryGrid(
                         messages = filteredMessages,
                         onSelect = { selectedSharedMediaMessage = it }
@@ -1850,7 +1852,7 @@ private fun AuthenticatedUserCard(
                             ) {
                                 Column {
                                     Text(
-                                        if (selected.mediaType == "video") "VIDEO PREVIEW" else "PHOTO PREVIEW",
+                                        if (selected.mediaType in listOf("video", "animation")) "VIDEO / GIF PREVIEW" else "PHOTO / STICKER PREVIEW",
                                         color = TextPrimary,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
@@ -1887,7 +1889,7 @@ private fun AuthenticatedUserCard(
                                     )
                                 }
                             ) {
-                                if (selected.mediaType == "video") {
+                                if (selected.mediaType in listOf("video", "animation")) {
                                     TelegramVideoContent(message = selected, onDownloadMedia = onDownloadMedia)
                                 } else {
                                     TelegramPhotoContent(message = selected, onDownloadMedia = onDownloadMedia)
@@ -1949,7 +1951,7 @@ private fun AuthenticatedUserCard(
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
                                         )
                                     }
-                                    if (selected.mediaType == "video" && mediaDurationMs > 0L) {
+                                    if (selected.mediaType in listOf("video", "animation") && mediaDurationMs > 0L) {
                                         val totalSeconds = mediaDurationMs / 1000L
                                         val durationLabel = String.format(Locale.getDefault(), "%d:%02d", totalSeconds / 60L, totalSeconds % 60L)
                                         Text(
@@ -2059,7 +2061,7 @@ private fun AuthenticatedUserCard(
                                     onClick = {
                                         val mediaPath = selected.mediaFilePath
                                         if (!mediaPath.isNullOrBlank()) {
-                                            saveTelegramMediaToGallery(context, mediaPath, selected.mediaType == "video")
+                                            saveTelegramMediaToGallery(context, mediaPath, selected.mediaType in listOf("video", "animation"))
                                         } else {
                                             Toast.makeText(context, "Load the original media before saving.", Toast.LENGTH_SHORT).show()
                                         }
@@ -2829,7 +2831,7 @@ private fun shareTelegramMedia(context: android.content.Context, path: String, m
             Toast.makeText(context, "Media file is not available yet.", Toast.LENGTH_SHORT).show()
             return
         }
-        val isVideo = mediaType == "video"
+        val isVideo = mediaType == "video" || mediaType == "animation"
         val isAudio = mediaType == "audio" || mediaType == "voice"
         val extension = source.extension.lowercase()
         val mimeType = when {

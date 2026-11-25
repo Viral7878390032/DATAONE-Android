@@ -1752,7 +1752,7 @@ private fun AuthenticatedUserCard(
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
                                             }
                                             when (message.mediaType) {
-                                                "photo" -> TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
+                                                "photo", "sticker" -> TelegramPhotoContent(message = message, onDownloadMedia = onDownloadMedia)
                                                 "video", "animation" -> TelegramVideoContent(message = message, onDownloadMedia = onDownloadMedia)
                                                 "audio", "voice" -> TelegramAudioContent(message = message, onDownloadMedia = onDownloadMedia)
                                                 "document" -> TelegramDocumentContent(message = message, onDownloadMedia = onDownloadMedia)

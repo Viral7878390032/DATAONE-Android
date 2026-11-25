@@ -1,5 +1,61 @@
 package com.example.feature.telegram.ui
 
+
+/**
+ * Copies a picker URI into app-private cache before handing it to TDLib.
+ * Keep the provider's real filename/extension so Telegram can identify formats
+ * such as PNG, WEBP, MOV and M4A correctly instead of receiving a renamed JPG/MP4.
+ */
+private fun copyTelegramAttachment(
+    context: android.content.Context,
+    uri: android.net.Uri,
+    prefix: String,
+    fallbackExtension: String
+): File? {
+    return runCatching {
+        val resolver = context.contentResolver
+        val displayName = resolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        }
+        val mimeType = resolver.getType(uri)
+        val mimeExtension = android.webkit.MimeTypeMap.getSingleton()
+            .getExtensionFromMimeType(mimeType)
+        val originalName = displayName
+            ?.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+            ?.trim()
+            ?.take(100)
+            ?.takeIf { it.isNotBlank() }
+        val extension = originalName
+            ?.substringAfterLast('.', "")
+            ?.takeIf { it.isNotBlank() && it.length <= 10 }
+            ?: mimeExtension
+            ?: fallbackExtension
+        val baseName = originalName
+            ?.substringBeforeLast('.', originalName)
+            ?.takeIf { it.isNotBlank() }
+            ?: prefix
+        val safeBase = baseName.take(80).ifBlank { prefix }
+        val destination = File(
+            context.cacheDir,
+            "telegram-$prefix-${System.currentTimeMillis()}-$safeBase.$extension"
+        )
+        val input = resolver.openInputStream(uri) ?: return null
+        input.use { source ->
+            destination.outputStream().use { output -> source.copyTo(output) }
+        }
+        destination.takeIf { it.isFile && it.length() > 0L } ?: run {
+            destination.delete()
+            null
+        }
+    }.getOrNull()
+}
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -1113,72 +1169,39 @@ private fun AuthenticatedUserCard(
         )
     }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            coroutineScope.launch {
-                val copiedFile = withContext(Dispatchers.IO) {
-                    val destination = File(context.cacheDir, "telegram-photo-${System.currentTimeMillis()}.jpg")
-                    val copied = context.contentResolver.openInputStream(uri)?.use { input ->
-                        destination.outputStream().use { output -> input.copyTo(output) }
-                        destination
-                    }
-                    copied
-                }
-                if (copiedFile != null) onSendPhoto(copiedFile.absolutePath)
+        if (uri != null) coroutineScope.launch {
+            val copiedFile = withContext(Dispatchers.IO) {
+                copyTelegramAttachment(context, uri, "photo", "jpg")
             }
+            if (copiedFile != null) onSendPhoto(copiedFile.absolutePath)
+            else Toast.makeText(context, "Unable to read the selected photo.", Toast.LENGTH_LONG).show()
         }
     }
     val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            coroutineScope.launch {
-                val copiedFile = withContext(Dispatchers.IO) {
-                    val destination = File(context.cacheDir, "telegram-video-${System.currentTimeMillis()}.mp4")
-                    val copied = context.contentResolver.openInputStream(uri)?.use { input ->
-                        destination.outputStream().use { output -> input.copyTo(output) }
-                        destination
-                    }
-                    copied
-                }
-                if (copiedFile != null) onSendVideo(copiedFile.absolutePath)
+        if (uri != null) coroutineScope.launch {
+            val copiedFile = withContext(Dispatchers.IO) {
+                copyTelegramAttachment(context, uri, "video", "mp4")
             }
+            if (copiedFile != null) onSendVideo(copiedFile.absolutePath)
+            else Toast.makeText(context, "Unable to read the selected video.", Toast.LENGTH_LONG).show()
         }
     }
     val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            coroutineScope.launch {
-                val copiedFile = withContext(Dispatchers.IO) {
-                    val displayName = context.contentResolver.query(
-                        uri,
-                        arrayOf(OpenableColumns.DISPLAY_NAME),
-                        null,
-                        null,
-                        null
-                    )?.use { cursor ->
-                        if (cursor.moveToFirst()) cursor.getString(0) else null
-                    } ?: "attachment-${System.currentTimeMillis()}"
-                    val safeName = displayName.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(100)
-                        .ifBlank { "attachment.bin" }
-                    val destination = File(context.cacheDir, "telegram-file-${System.currentTimeMillis()}-$safeName")
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        destination.outputStream().use { output -> input.copyTo(output) }
-                        destination
-                    }
-                }
-                if (copiedFile != null) onSendDocument(copiedFile.absolutePath)
+        if (uri != null) coroutineScope.launch {
+            val copiedFile = withContext(Dispatchers.IO) {
+                copyTelegramAttachment(context, uri, "file", "bin")
             }
+            if (copiedFile != null) onSendDocument(copiedFile.absolutePath)
+            else Toast.makeText(context, "Unable to read the selected file.", Toast.LENGTH_LONG).show()
         }
     }
     val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            coroutineScope.launch {
-                val copiedFile = withContext(Dispatchers.IO) {
-                    val destination = File(context.cacheDir, "telegram-audio-${System.currentTimeMillis()}.audio")
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        destination.outputStream().use { output -> input.copyTo(output) }
-                        destination
-                    }
-                }
-                if (copiedFile != null) onSendAudio(copiedFile.absolutePath)
+        if (uri != null) coroutineScope.launch {
+            val copiedFile = withContext(Dispatchers.IO) {
+                copyTelegramAttachment(context, uri, "audio", "audio")
             }
+            if (copiedFile != null) onSendAudio(copiedFile.absolutePath)
+            else Toast.makeText(context, "Unable to read the selected audio.", Toast.LENGTH_LONG).show()
         }
     }
     Surface(color = BackgroundDark, modifier = Modifier.fillMaxSize()) {

@@ -115,7 +115,9 @@ class TelegramRepositoryImpl(
     }
 
     override suspend fun logout(): Result<Unit> = withContext(ioDispatcher) {
-        security.clearSession()
+        // Keep the TDLib database encryption key and API credentials across logout.
+        // TDLib's encrypted database remains on disk; rotating its key here would
+        // make the existing database unreadable on the next sign-in.
         clientBridge.logout()
     }
 

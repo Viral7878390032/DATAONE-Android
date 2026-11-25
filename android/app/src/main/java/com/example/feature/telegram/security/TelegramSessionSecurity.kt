@@ -91,9 +91,22 @@ class TelegramSessionSecurity(private val context: Context) {
             .apply()
     }
 
+    /** Reads an encrypted string preference for non-secret private app data. */
+    fun getEncryptedString(key: String): String? = encryptedPrefs.getString(key, null)
+
+    /** Stores a string using Android Keystore-backed encrypted preferences. */
+    fun putEncryptedString(key: String, value: String) {
+        encryptedPrefs.edit().putString(key, value).apply()
+    }
+
+    /** Removes a value from encrypted preferences. */
+    fun removeEncryptedValue(key: String) {
+        encryptedPrefs.edit().remove(key).apply()
+    }
+
     /**
      * Clears all session keys, forcing a fresh authorization flow.
-     * Called on user logout or session revocation.
+     * Use only when the local TDLib database is also intentionally reset.
      */
     fun clearSession() {
         encryptedPrefs.edit()

@@ -710,12 +710,16 @@ class NativeTdLibBridge : TelegramClientBridge {
         val video = (messageContent as? TdApi.MessageVideo)?.video
         val videoFile = video?.video
         val videoPreviewFile = video?.thumbnail?.file
+        val animation = (messageContent as? TdApi.MessageAnimation)?.animation
+        val animationFile = animation?.animation
+        val animationPreviewFile = animation?.thumbnail?.file
         val document = (messageContent as? TdApi.MessageDocument)?.document
         val documentFile = document?.document
-        val localFile = photoFile?.local ?: videoFile?.local ?: documentFile?.local ?: audioFile?.local
+        val localFile = photoFile?.local ?: videoFile?.local ?: animationFile?.local ?: documentFile?.local ?: audioFile?.local
         val mediaType = when {
             photoFile != null -> "photo"
             videoFile != null -> "video"
+            animationFile != null -> "animation"
             documentFile != null -> "document"
             messageContent is TdApi.MessageAudio -> "audio"
             messageContent is TdApi.MessageVoiceNote -> "voice"
@@ -724,6 +728,7 @@ class NativeTdLibBridge : TelegramClientBridge {
         val caption = when (val content = messageContent) {
             is TdApi.MessagePhoto -> content.caption.text
             is TdApi.MessageVideo -> content.caption.text
+            is TdApi.MessageAnimation -> content.caption.text
             is TdApi.MessageDocument -> content.caption.text
             is TdApi.MessageAudio -> content.caption.text
             is TdApi.MessageVoiceNote -> content.caption.text
@@ -734,7 +739,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             chatId = message.chatId,
             text = when (messageContent) {
                 is TdApi.MessageText -> messagePreview(messageContent)
-                is TdApi.MessagePhoto, is TdApi.MessageVideo -> caption.ifBlank { messagePreview(messageContent) }
+                is TdApi.MessagePhoto, is TdApi.MessageVideo, is TdApi.MessageAnimation -> caption.ifBlank { messagePreview(messageContent) }
                 is TdApi.MessageDocument -> caption.ifBlank { messageContent.document.fileName.ifBlank { "File" } }
                 is TdApi.MessageAudio -> caption.ifBlank { messageContent.audio.title.ifBlank { "Audio" } }
                 is TdApi.MessageVoiceNote -> "Voice message"
@@ -744,13 +749,13 @@ class NativeTdLibBridge : TelegramClientBridge {
             isOutgoing = message.isOutgoing,
             isPinned = message.isPinned,
             mediaType = mediaType,
-            mediaFileId = photoFile?.id ?: videoFile?.id ?: documentFile?.id ?: audioFile?.id,
+            mediaFileId = photoFile?.id ?: videoFile?.id ?: animationFile?.id ?: documentFile?.id ?: audioFile?.id,
             mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true,
-            previewFileId = previewFile?.id ?: videoPreviewFile?.id,
-            previewFilePath = (previewFile?.local ?: videoPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
-            mediaFileName = document?.fileName ?: video?.fileName
+            previewFileId = previewFile?.id ?: videoPreviewFile?.id ?: animationPreviewFile?.id,
+            previewFilePath = (previewFile?.local ?: videoPreviewFile?.local ?: animationPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
+            mediaFileName = document?.fileName ?: video?.fileName ?: animation?.fileName
         )
     }
 

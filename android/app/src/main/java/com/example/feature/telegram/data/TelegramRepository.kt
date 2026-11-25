@@ -49,9 +49,7 @@ interface TelegramRepository {
      */
     suspend fun submitRegistration(firstName: String, lastName: String): Result<Unit>
 
-    /**
-     * Disconnects and logs out user, wiping session encryption keys.
-     */
+    /** Logs out of Telegram while preserving the key needed to reopen the encrypted local TDLib database. */
     suspend fun logout(): Result<Unit>
 
     /**

@@ -49,6 +49,32 @@ class NativeTdLibBridge : TelegramClientBridge {
     @Volatile private var selectedChatId: Long? = null
     @Volatile private var chatRefreshJob: Job? = null
     private val messageCache = LinkedHashMap<Long, List<TelegramMessage>>()
+
+    /**
+     * Keep only a small recent window for recently opened chats. Browsing many
+     * conversations must not retain every message page forever in app memory.
+     */
+    private fun cacheMessagesForChat(chatId: Long, messages: List<TelegramMessage>) {
+        synchronized(messageCache) {
+            messageCache.remove(chatId)
+            messageCache[chatId] = messages.takeLast(100)
+            while (messageCache.size > 15) {
+                val oldestChatId = messageCache.keys.firstOrNull() ?: break
+                messageCache.remove(oldestChatId)
+            }
+        }
+    }
+
+    private fun cachedMessagesForChat(chatId: Long): List<TelegramMessage> =
+        synchronized(messageCache) {
+            val cached = messageCache.remove(chatId) ?: return@synchronized emptyList()
+            messageCache[chatId] = cached
+            cached
+        }
+
+    private fun clearMessageCache() {
+        synchronized(messageCache) { messageCache.clear() }
+    }
     @Volatile private var isLoadingOlderHistory = false
     @Volatile private var hasMoreChatHistory = true
     // Search and shared-media results are not a chronological chat-history page.
@@ -526,7 +552,7 @@ class NativeTdLibBridge : TelegramClientBridge {
         hasMoreChatHistory = true
         isLoadingOlderHistory = false
         // Restore cached messages immediately when returning to a conversation.
-        val cached = synchronized(messageCache) { messageCache[chatId] }
+        val cached = cachedMessagesForChat(chatId)
         _messages.value = cached.orEmpty()
         sendRequest(TdApi.OpenChat(chatId))
         // Fetch only the newest page on the foreground path; older messages are paged in later.
@@ -535,7 +561,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             val latest = page.messages.sortedWith(compareBy<TdApi.Message> { it.date }.thenBy { it.id }).map(::toTelegramMessage)
             val merged = (cached.orEmpty() + latest).distinctBy { it.id }.sortedWith(compareBy<TelegramMessage> { it.date }.thenBy { it.id })
             _messages.value = merged
-            synchronized(messageCache) { messageCache[chatId] = merged }
+            cacheMessagesForChat(chatId, merged)
             hasMoreChatHistory = page.messages.size >= 80
             // Media previews remain on-demand: the UI starts a download only after
             // the user taps Preview/Download. This avoids background data usage.
@@ -607,7 +633,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                 val existingIds = _messages.value.mapTo(mutableSetOf()) { it.id }
                 val uniqueOlder = olderMessages.filterNot { it.id in existingIds }
                 _messages.value = uniqueOlder + _messages.value
-                synchronized(messageCache) { messageCache[chatId] = _messages.value }
+                cacheMessagesForChat(chatId, _messages.value)
                 if (result.messages.size < 50 || uniqueOlder.isEmpty()) hasMoreChatHistory = false
             }
             Result.success(Unit)
@@ -931,10 +957,19 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
 
     override suspend fun logout(): Result<Unit> =
-        runRequest { TdApi.LogOut() }.also {
-            if (it.isFailure) _authState.value = TelegramAuthState.Error(
-                it.exceptionOrNull()?.message ?: "Unable to log out of Telegram."
-            )
+        runRequest { TdApi.LogOut() }.also { result ->
+            if (result.isSuccess) {
+                selectedChatId = null
+                _messages.value = emptyList()
+                _chats.value = emptyList()
+                clearMessageCache()
+                isShowingFilteredMessages = false
+                hasMoreChatHistory = true
+            } else {
+                _authState.value = TelegramAuthState.Error(
+                    result.exceptionOrNull()?.message ?: "Unable to log out of Telegram."
+                )
+            }
         }
 
     override suspend fun close(): Result<Unit> {

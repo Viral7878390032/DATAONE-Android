@@ -241,8 +241,9 @@ fun TelegramScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    BackHandler(enabled = uiState.authState !is TelegramAuthState.Authenticated) {
-        Toast.makeText(context, "Complete Telegram sign-in to continue.", Toast.LENGTH_SHORT).show()
+    BackHandler {
+        val message = if (uiState.authState is TelegramAuthState.Authenticated) "You are already on chats." else "Complete Telegram sign-in to continue."
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     LaunchedEffect(uiState.errorMessage) {

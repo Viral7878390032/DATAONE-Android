@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.drinkless.tdlib.Client
 import org.drinkless.tdlib.TdApi
@@ -266,19 +267,21 @@ class NativeTdLibBridge : TelegramClientBridge {
     }
 
     private suspend fun sendRequest(function: TdApi.Function<*>): TdApi.Object =
-        suspendCancellableCoroutine { continuation ->
-            val currentClient = client
-            if (currentClient == null) {
-                continuation.resume(TdApi.Error(500, "Telegram client is not initialized."))
-                return@suspendCancellableCoroutine
-            }
-            try {
-                currentClient.send(function, Client.ResultHandler { result ->
-                    if (continuation.isActive) continuation.resume(result)
-                })
-            } catch (error: Throwable) {
-                if (continuation.isActive) {
-                    continuation.resume(TdApi.Error(500, error.message ?: "TDLib request failed."))
+        withTimeout(30_000) {
+            suspendCancellableCoroutine { continuation ->
+                val currentClient = client
+                if (currentClient == null) {
+                    continuation.resume(TdApi.Error(500, "Telegram client is not initialized."))
+                    return@suspendCancellableCoroutine
+                }
+                try {
+                    currentClient.send(function, Client.ResultHandler { result ->
+                        if (continuation.isActive) continuation.resume(result)
+                    })
+                } catch (error: Throwable) {
+                    if (continuation.isActive) {
+                        continuation.resume(TdApi.Error(500, error.message ?: "TDLib request failed."))
+                    }
                 }
             }
         }.let { result ->

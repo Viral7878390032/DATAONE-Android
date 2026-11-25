@@ -278,7 +278,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitPhoneNumber -> {
-                    AuthStepIndicator(step = 1, title = "Your phone number", subtitle = "Start by entering the number linked to Telegram.")
+                    AuthStepIndicator(step = 1, title = "Your phone number", subtitle = "Enter your Telegram number.")
                     PhoneNumberInputCard(
                         phoneNumber = uiState.phoneInput,
                         isLoading = uiState.isLoading,
@@ -288,7 +288,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitCode -> {
-                    AuthStepIndicator(step = 2, title = "Verify your number", subtitle = "Enter the login code sent by Telegram.")
+                    AuthStepIndicator(step = 2, title = "Verify your number", subtitle = "Enter your Telegram code.")
                     CodeVerificationCard(
                         phoneNumber = state.phoneNumber,
                         code = uiState.codeInput,
@@ -300,7 +300,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitPassword -> {
-                    AuthStepIndicator(step = 3, title = "Extra account security", subtitle = "Complete your Telegram two-step verification.")
+                    AuthStepIndicator(step = 3, title = "Extra account security", subtitle = "Enter your Telegram password.")
                     TwoFactorPasswordCard(
                         password = uiState.passwordInput,
                         hint = state.passwordHint,
@@ -313,7 +313,7 @@ fun TelegramScreen(
                 }
 
                 is TelegramAuthState.WaitRegistration -> {
-                    AuthStepIndicator(step = 3, title = "Create your profile", subtitle = "Add your name to finish Telegram sign-up.")
+                    AuthStepIndicator(step = 3, title = "Create your profile", subtitle = "Add your name to continue.")
                     RegistrationCard(
                         firstName = uiState.registrationFirstName,
                         lastName = uiState.registrationLastName,
@@ -529,7 +529,7 @@ private fun UninitializedStateCard(
         Column(modifier = Modifier.padding(22.dp)) {
             Text("READY TO CONNECT", fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold, color = TelegramBlue)
             Spacer(modifier = Modifier.height(9.dp))
-            Text("Bring your Telegram chats into DATAONE", fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text("Connect your Telegram account", fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 "Sign in with the mobile number linked to your Telegram account. Your existing chats stay in Telegram.",
@@ -541,7 +541,7 @@ private fun UninitializedStateCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Security, contentDescription = "Secure connection", tint = StatusSuccess, modifier = Modifier.size(17.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Secure sign-in · No new account needed", color = TextSecondary, fontSize = 11.sp)
+                
             }
             Spacer(modifier = Modifier.height(21.dp))
             Button(
@@ -575,7 +575,7 @@ private fun PhoneNumberInputCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text("Which number do you use on Telegram?", fontSize = 18.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Spacer(modifier = Modifier.height(7.dp))
-            Text("Enter your number with its country code. We’ll send a sign-in code through Telegram.", fontSize = 13.sp, color = TextSecondary, lineHeight = 19.sp)
+            Text("Include your country code.", fontSize = 12.sp, color = TextSecondary)
             Spacer(modifier = Modifier.height(19.dp))
             Text("Phone number", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
             Spacer(modifier = Modifier.height(7.dp))
@@ -600,7 +600,7 @@ private fun PhoneNumberInputCard(
                 )
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Example: +91 followed by your 10-digit number", fontSize = 11.sp, color = TextMuted)
+            
             Spacer(modifier = Modifier.height(19.dp))
             Button(
                 onClick = onSubmit,
@@ -635,7 +635,7 @@ private fun CodeVerificationCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text("Enter the login code", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Spacer(modifier = Modifier.height(7.dp))
-            Text("Telegram sent a code via $deliveryType to $phoneNumber. Enter it below to continue.", fontSize = 13.sp, color = TextSecondary, lineHeight = 19.sp)
+            Text("Code sent via $deliveryType to $phoneNumber.", fontSize = 12.sp, color = TextSecondary)
             Spacer(modifier = Modifier.height(19.dp))
             Text("Verification code", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
             Spacer(modifier = Modifier.height(7.dp))
@@ -1280,55 +1280,20 @@ private fun AuthenticatedUserCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Your conversations",
+                            "Chats",
                             color = TextPrimary,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = (-0.55).sp
                         )
                         Text(
-                            "${chats.size} chats  •  ${unreadChatsCount} unread",
+                            "${chats.size} chats · ${unreadChatsCount} unread",
                             color = TextSecondary,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(top = 3.dp)
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(StatusSuccess.copy(alpha = 0.12f))
-                            .border(1.dp, StatusSuccess.copy(alpha = 0.28f), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(6.dp).clip(CircleShape).background(StatusSuccess))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Connected", color = StatusSuccess, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 9.dp, bottom = 7.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = { showNewChatDialog = true },
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = TelegramBlue.copy(alpha = 0.12f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, TelegramBlue.copy(alpha = 0.55f))
-                    ) { Text("+ New chat", color = Color(0xFF75C9F2), fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedButton(
-                        onClick = { sortChatsByName = !sortChatsByName },
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceCard),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderHairline)
-                    ) {
-                        Text(if (sortChatsByName) "Sort by: Name" else "Sort by: Recent", fontSize = 11.sp, color = TextPrimary)
-                    }
+
                 }
                 OutlinedTextField(
                     value = chatSearchQuery,
@@ -1408,7 +1373,7 @@ private fun AuthenticatedUserCard(
                                 Spacer(modifier = Modifier.height(14.dp))
                                 Text("Loading conversations", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                 Spacer(modifier = Modifier.height(5.dp))
-                                Text("Your Telegram chats will appear here.", color = TextSecondary, fontSize = 12.sp)
+                                Text("", color = TextSecondary, fontSize = 12.sp)
                             }
                         }
                     }
@@ -1442,7 +1407,7 @@ private fun AuthenticatedUserCard(
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = if (chats.isEmpty()) "Pull to refresh or try loading your Telegram chats again." else "Try another name or clear your active filters.",
+                                    text = if (chats.isEmpty()) "No chats yet. Refresh to try again." else "No results. Change your search or filters.",
                                     color = TextSecondary,
                                     fontSize = 12.sp,
                                     lineHeight = 18.sp,
@@ -1557,27 +1522,18 @@ private fun AuthenticatedUserCard(
                     }
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(
-                        Brush.verticalGradient(listOf(SurfaceCard, SurfaceDark))
-                    ).border(1.dp, BorderHairline).padding(horizontal = 8.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth().background(SurfaceDark)
+                        .border(1.dp, BorderHairline).padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f).clickable { onCloseChat() }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("💬", fontSize = 19.sp)
+                        Text("💬", fontSize = 18.sp)
                         Text("Chats", color = TelegramBlue, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                     }
                     Column(Modifier.weight(1f).clickable { showNewChatDialog = true }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("👤", fontSize = 19.sp)
+                        Text("👤", fontSize = 18.sp)
                         Text("Contacts", color = TextSecondary, fontSize = 10.sp)
-                    }
-                    Column(Modifier.weight(1f).clickable { Toast.makeText(context, "Calls are not available yet.", Toast.LENGTH_SHORT).show() }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("📞", fontSize = 19.sp)
-                        Text("Calls", color = TextSecondary, fontSize = 10.sp)
-                    }
-                    Column(Modifier.weight(1f).clickable { showTelegramSettings = true }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("⚙️", fontSize = 19.sp)
-                        Text("Settings", color = TextSecondary, fontSize = 10.sp)
                     }
                 }
             } else {

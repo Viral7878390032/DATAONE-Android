@@ -816,7 +816,19 @@ private fun AuthenticatedUserCard(
     var voiceRecorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var voiceRecordingFile by remember { mutableStateOf<File?>(null) }
     var voiceRecordingStartedAt by remember { mutableStateOf(0L) }
+    var voiceElapsedSeconds by remember { mutableStateOf(0) }
     var isRecordingVoice by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isRecordingVoice, voiceRecordingStartedAt) {
+        if (isRecordingVoice) {
+            while (true) {
+                voiceElapsedSeconds = ((System.currentTimeMillis() - voiceRecordingStartedAt) / 1000L).toInt()
+                delay(250)
+            }
+        } else {
+            voiceElapsedSeconds = 0
+        }
+    }
     var showAttachmentMenu by remember { mutableStateOf(false) }
 
     // Remove abandoned temporary attachment copies after a generous retention window.
@@ -2282,7 +2294,19 @@ private fun AuthenticatedUserCard(
                         value = messageDraft,
                         onValueChange = onMessageDraftChange,
                         modifier = Modifier.weight(1f).heightIn(min = 52.dp).padding(vertical = 1.dp),
-                        placeholder = { Text("Message", color = TextMuted, fontSize = 14.sp) },
+                        placeholder = {
+                            if (isRecordingVoice) {
+                                val minutes = voiceElapsedSeconds / 60
+                                val seconds = voiceElapsedSeconds % 60
+                                Text(
+                                    "Recording • %02d:%02d".format(minutes, seconds),
+                                    color = Color(0xFFFF7777),
+                                    fontSize = 14.sp
+                                )
+                            } else {
+                                Text("Message", color = TextMuted, fontSize = 14.sp)
+                            }
+                        },
                         maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = TelegramBlue,

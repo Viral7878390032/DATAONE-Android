@@ -848,6 +848,9 @@ class NativeTdLibBridge : TelegramClientBridge {
             mediaFilePath = localFile?.path?.takeIf { localFile.isDownloadingCompleted && it.isNotBlank() },
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true,
+            mediaDownloadProgress = localFile?.let { local ->
+                if (local.expectedSize > 0L) (local.downloadedSize.toFloat() / local.expectedSize.toFloat()).coerceIn(0f, 1f) else 0f
+            } ?: 0f,
             previewFileId = previewFile?.id ?: videoPreviewFile?.id ?: animationPreviewFile?.id,
             previewFilePath = (previewFile?.local ?: videoPreviewFile?.local ?: animationPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
             mediaFileName = document?.fileName ?: video?.fileName ?: animation?.fileName ?: sticker?.emoji
@@ -917,7 +920,14 @@ class NativeTdLibBridge : TelegramClientBridge {
         _messages.update { current ->
             current.map { message ->
                 when {
-                    message.mediaFileId == file.id -> message.copy(mediaFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() }, isMediaDownloaded = file.local.isDownloadingCompleted, isMediaDownloading = file.local.isDownloadingActive)
+                    message.mediaFileId == file.id -> message.copy(
+                        mediaFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() },
+                        isMediaDownloaded = file.local.isDownloadingCompleted,
+                        isMediaDownloading = file.local.isDownloadingActive,
+                        mediaDownloadProgress = if (file.local.expectedSize > 0L) {
+                            (file.local.downloadedSize.toFloat() / file.local.expectedSize.toFloat()).coerceIn(0f, 1f)
+                        } else 0f
+                    )
                     message.previewFileId == file.id -> message.copy(previewFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() })
                     else -> message
                 }

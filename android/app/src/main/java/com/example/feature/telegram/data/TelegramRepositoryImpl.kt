@@ -94,7 +94,8 @@ class TelegramRepositoryImpl(
             applicationVersion = "DATAONE-1.0.0"
         )
 
-        clientBridge.initialize(params)
+        // Propagate initialization failures so the UI can show a retryable error.
+        clientBridge.initialize(params).getOrThrow()
         Unit
     }
 

@@ -99,14 +99,54 @@ class NativeTdLibBridge : TelegramClientBridge {
                             is TdApi.UpdateChatLastMessage -> scope.launch { refreshChats() }
                             is TdApi.UpdateNewMessage -> {
                                 if (update.message.chatId == selectedChatId) {
-                                    val incoming = toTelegramMessage(update.message)
-                                    _messages.update { current ->
-                                        (current.filterNot { it.id == incoming.id } + incoming)
-                                            .sortedWith(compareBy<TelegramMessage> { it.date }.thenBy { it.id })
-                                    }
+                                    replaceLiveMessage(update.message)
                                 } else {
                                     scope.launch { refreshChats() }
                                 }
+                            }
+                            is TdApi.UpdateMessageContent -> {
+                                scope.launch { refreshLiveMessage(update.chatId, update.messageId) }
+                            }
+                            is TdApi.UpdateMessageEdited -> {
+                                scope.launch { refreshLiveMessage(update.chatId, update.messageId) }
+                            }
+                            is TdApi.UpdateMessageSendSucceeded -> {
+                                if (update.message.chatId == selectedChatId) {
+                                    replaceLiveMessage(update.message, update.oldMessageId)
+                                } else {
+                                    scope.launch { refreshChats() }
+                                }
+                            }
+                            is TdApi.UpdateMessageSendFailed -> {
+                                if (update.message.chatId == selectedChatId) {
+                                    replaceLiveMessage(update.message, update.oldMessageId)
+                                } else {
+                                    scope.launch { refreshChats() }
+                                }
+                            }
+                            is TdApi.UpdateDeleteMessages -> {
+                                if (update.chatId == selectedChatId) {
+                                    val removedIds = update.messageIds.toSet()
+                                    _messages.update { current -> current.filterNot { it.id in removedIds } }
+                                }
+                                scope.launch { refreshChats() }
+                            }
+                            is TdApi.UpdateChatReadInbox -> {
+                                _chats.update { current ->
+                                    current.map { chat ->
+                                        if (chat.id == update.chatId) chat.copy(unreadCount = update.unreadCount) else chat
+                                    }
+                                }
+                            }
+                            is TdApi.UpdateChatUnreadMentionCount -> {
+                                _chats.update { current ->
+                                    current.map { chat ->
+                                        if (chat.id == update.chatId) chat.copy(unreadMentionCount = update.unreadMentionCount) else chat
+                                    }
+                                }
+                            }
+                            is TdApi.UpdateChatPosition -> {
+                                scope.launch { refreshChats() }
                             }
                         }
                     },
@@ -786,6 +826,33 @@ class NativeTdLibBridge : TelegramClientBridge {
     } catch (error: Throwable) {
         Log.d(tag, "Could not load Telegram presence for user $userId", error)
         null
+    }
+
+    /**
+     * Applies TDLib's live message updates without waiting for a manual chat refresh.
+     * This keeps edits, outgoing-message IDs, and incoming messages in sync with the
+     * active conversation while keeping the chat list refreshes bounded.
+     */
+    private fun replaceLiveMessage(message: TdApi.Message, oldMessageId: Long? = null) {
+        val converted = toTelegramMessage(message)
+        _messages.update { current ->
+            (current.filterNot { it.id == converted.id || (oldMessageId != null && it.id == oldMessageId) } + converted)
+                .sortedWith(compareBy<TelegramMessage> { it.date }.thenBy { it.id })
+        }
+    }
+
+    private suspend fun refreshLiveMessage(chatId: Long, messageId: Long) {
+        if (chatId != selectedChatId) {
+            refreshChats()
+            return
+        }
+        runCatching {
+            sendRequest(TdApi.GetMessage(chatId, messageId)) as TdApi.Message
+        }.onSuccess { message ->
+            replaceLiveMessage(message)
+        }.onFailure { error ->
+            Log.w(tag, "Unable to refresh live Telegram message $messageId.", error)
+        }
     }
 
     private fun updateMessageFile(file: TdApi.File) {

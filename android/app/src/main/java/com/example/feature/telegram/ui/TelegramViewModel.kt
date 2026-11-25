@@ -247,12 +247,24 @@ class TelegramViewModel(
         }
     }
 
+    private fun beginSendingMessage(): Boolean {
+        var started = false
+        _uiState.update { current ->
+            if (current.isSendingMessage) current
+            else {
+                started = true
+                current.copy(isSendingMessage = true, errorMessage = null)
+            }
+        }
+        return started
+    }
+
     fun sendPhotoMessage(path: String) {
+        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendPhotoMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
@@ -267,11 +279,11 @@ class TelegramViewModel(
     }
 
     fun sendVideoMessage(path: String) {
+        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendVideoMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
@@ -286,11 +298,11 @@ class TelegramViewModel(
     }
 
     fun sendAudioMessage(path: String) {
+        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendAudioMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
@@ -305,21 +317,21 @@ class TelegramViewModel(
     }
 
     fun sendVoiceMessage(path: String, durationSeconds: Int) {
+        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendVoiceMessage(chatId, path, durationSeconds)
             _uiState.update { it.copy(isSendingMessage = false, errorMessage = result.exceptionOrNull()?.message) }
         }
     }
 
     fun sendDocumentMessage(path: String) {
+        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
         val caption = _uiState.value.messageDraft.trim()
         viewModelScope.launch {
-            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendDocumentMessage(chatId, path, caption)
             _uiState.update {
                 it.copy(
@@ -364,11 +376,11 @@ class TelegramViewModel(
         }
     }
     fun sendMessage(replyToMessageId: Long? = null) {
+        if (!beginSendingMessage()) return
         val chatId = _uiState.value.selectedChatId ?: return
         val text = _uiState.value.messageDraft.trim()
         if (text.isBlank()) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isSendingMessage = true, errorMessage = null) }
             val result = repository.sendTextMessage(chatId, text, replyToMessageId)
             _uiState.update {
                 it.copy(

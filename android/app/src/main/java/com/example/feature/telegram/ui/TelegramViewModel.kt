@@ -31,6 +31,9 @@ class TelegramViewModel(
     private var openChatJob: Job? = null
     private var chatDetailsJob: Job? = null
     private var olderMessagesJob: Job? = null
+    private var contactsSearchJob: Job? = null
+    private var messageSearchJob: Job? = null
+    private var sharedMediaJob: Job? = null
     private var refreshChatsAgain = false
 
     init {
@@ -68,10 +71,24 @@ class TelegramViewModel(
     }
 
     fun searchContacts(query: String = "") {
-        viewModelScope.launch {
+        contactsSearchJob?.cancel()
+        contactsSearchJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoadingContacts = true, errorMessage = null) }
-            val result = repository.searchContacts(query)
-            _uiState.update { it.copy(contacts = result.getOrDefault(emptyList()), isLoadingContacts = false, errorMessage = result.exceptionOrNull()?.message) }
+            val result = try {
+                repository.searchContacts(query.trim())
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            // A slower earlier query must never replace results for newer input.
+            if (contactsSearchJob?.isActive == true) {
+                _uiState.update {
+                    it.copy(
+                        contacts = result.getOrDefault(emptyList()),
+                        isLoadingContacts = false,
+                        errorMessage = result.exceptionOrNull()?.message
+                    )
+                }
+            }
         }
     }
 
@@ -198,6 +215,8 @@ class TelegramViewModel(
     }
 
     fun openChat(chatId: Long) {
+        messageSearchJob?.cancel()
+        sharedMediaJob?.cancel()
         openChatJob?.cancel()
         openChatJob = viewModelScope.launch {
             _uiState.update { current ->
@@ -226,9 +245,14 @@ class TelegramViewModel(
 
     fun searchChatMessages(query: String) {
         val chatId = _uiState.value.selectedChatId ?: return
-        viewModelScope.launch {
-            val result = repository.searchChatMessages(chatId, query)
-            if (result.isFailure) {
+        messageSearchJob?.cancel()
+        messageSearchJob = viewModelScope.launch {
+            val result = try {
+                repository.searchChatMessages(chatId, query.trim())
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            if (_uiState.value.selectedChatId == chatId && messageSearchJob?.isActive == true && result.isFailure) {
                 _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Message search failed.") }
             }
         }
@@ -236,9 +260,14 @@ class TelegramViewModel(
 
     fun loadSharedMedia(category: String) {
         val chatId = _uiState.value.selectedChatId ?: return
-        viewModelScope.launch {
-            val result = repository.loadSharedMedia(chatId, category)
-            if (result.isFailure) {
+        sharedMediaJob?.cancel()
+        sharedMediaJob = viewModelScope.launch {
+            val result = try {
+                repository.loadSharedMedia(chatId, category)
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            if (_uiState.value.selectedChatId == chatId && sharedMediaJob?.isActive == true && result.isFailure) {
                 _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to load shared media.") }
             }
         }
@@ -260,6 +289,10 @@ class TelegramViewModel(
     }
 
     fun closeChat() {
+        messageSearchJob?.cancel()
+        sharedMediaJob?.cancel()
+        openChatJob?.cancel()
+        chatDetailsJob?.cancel()
         _uiState.update { current ->
             val chatId = current.selectedChatId
             val drafts = if (chatId != null) current.chatDrafts + (chatId to current.messageDraft) else current.chatDrafts

@@ -493,18 +493,31 @@ class TelegramViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            repository.logout()
-            repository.clearChatDrafts()
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    phoneInput = "",
-                    codeInput = "",
-                    passwordInput = "",
-                    registrationFirstName = "",
-                    registrationLastName = ""
-                )
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val result = repository.logout()
+            if (result.isSuccess) {
+                repository.clearChatDrafts()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        phoneInput = "",
+                        codeInput = "",
+                        passwordInput = "",
+                        registrationFirstName = "",
+                        registrationLastName = "",
+                        messageDraft = "",
+                        chatDrafts = emptyMap(),
+                        selectedChatId = null,
+                        errorMessage = null
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = result.exceptionOrNull()?.message ?: "Unable to log out. Please try again."
+                    )
+                }
             }
         }
     }

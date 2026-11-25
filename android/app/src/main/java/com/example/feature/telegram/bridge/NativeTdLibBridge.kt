@@ -723,6 +723,8 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
         val caption = when (val content = messageContent) {
             is TdApi.MessagePhoto -> content.caption.text
+            is TdApi.MessageVideo -> content.caption.text
+            is TdApi.MessageDocument -> content.caption.text
             is TdApi.MessageAudio -> content.caption.text
             is TdApi.MessageVoiceNote -> content.caption.text
             else -> ""
@@ -732,7 +734,8 @@ class NativeTdLibBridge : TelegramClientBridge {
             chatId = message.chatId,
             text = when (messageContent) {
                 is TdApi.MessageText -> messagePreview(messageContent)
-                is TdApi.MessagePhoto -> caption
+                is TdApi.MessagePhoto, is TdApi.MessageVideo -> caption.ifBlank { messagePreview(messageContent) }
+                is TdApi.MessageDocument -> caption.ifBlank { messageContent.document.fileName.ifBlank { "File" } }
                 is TdApi.MessageAudio -> caption.ifBlank { messageContent.audio.title.ifBlank { "Audio" } }
                 is TdApi.MessageVoiceNote -> "Voice message"
                 else -> messagePreview(messageContent)
@@ -747,7 +750,7 @@ class NativeTdLibBridge : TelegramClientBridge {
             isMediaDownloading = localFile?.isDownloadingActive == true,
             previewFileId = previewFile?.id ?: videoPreviewFile?.id,
             previewFilePath = (previewFile?.local ?: videoPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
-            mediaFileName = document?.fileName
+            mediaFileName = document?.fileName ?: video?.fileName
         )
     }
 

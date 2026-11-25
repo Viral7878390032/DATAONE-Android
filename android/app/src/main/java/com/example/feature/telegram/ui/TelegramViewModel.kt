@@ -288,6 +288,58 @@ class TelegramViewModel(
         }
     }
 
+    fun sendMessage(replyToMessageId: Long? = null) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        val message = _uiState.value.messageDraft.trim()
+        if (message.isBlank()) return
+        performMessageSend(chatId) {
+            repository.sendTextMessage(chatId, message, replyToMessageId)
+        }
+    }
+
+    fun forwardMessage(fromChatId: Long, messageId: Long, toChatId: Long) {
+        viewModelScope.launch {
+            val result = repository.forwardMessage(fromChatId, messageId, toChatId)
+            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
+    fun editTextMessage(messageId: Long, newText: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        if (newText.isBlank()) return
+        viewModelScope.launch {
+            val result = repository.editTextMessage(chatId, messageId, newText.trim())
+            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
+    fun deleteMessage(messageId: Long) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch {
+            val result = repository.deleteMessage(chatId, messageId)
+            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
+    fun addMessageReaction(messageId: Long, emoji: String) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        if (emoji.isBlank()) return
+        viewModelScope.launch {
+            val result = repository.addMessageReaction(chatId, messageId, emoji)
+            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+        }
+    }
+
+    fun toggleMessagePinned(messageId: Long, isPinned: Boolean) {
+        val chatId = _uiState.value.selectedChatId ?: return
+        viewModelScope.launch {
+            val result = repository.toggleMessagePinned(chatId, messageId, isPinned)
+            _uiState.update {
+                it.copy(errorMessage = result.exceptionOrNull()?.message ?: if (result.isSuccess) null else "Unable to update pinned message.")
+            }
+        }
+    }
+
     fun sendPhotoMessage(path: String) {
         val chatId = _uiState.value.selectedChatId ?: return
         if (path.isBlank()) return
@@ -342,12 +394,13 @@ class TelegramViewModel(
 
     fun onPhoneChanged(newPhone: String) {
         // Keep valid phone characters (+ and digits)
-        val filtered = newPhone.filter { it == '+' || it.isDigit() }
+        val digits = newPhone.filter { it.isDigit() }.take(15)
+        val filtered = (if (newPhone.trimStart().startsWith("+")) "+" else "") + digits
         _uiState.update { it.copy(phoneInput = filtered, errorMessage = null) }
     }
 
     fun onCodeChanged(newCode: String) {
-        val filtered = newCode.filter { it.isDigit() }.take(6)
+        val filtered = newCode.filter { it.isDigit() }.take(8)
         _uiState.update { it.copy(codeInput = filtered, errorMessage = null) }
     }
 
@@ -364,8 +417,9 @@ class TelegramViewModel(
     }
 
     fun submitRegistration() {
-        val firstName = _uiState.value.registrationFirstName.trim()
-        val lastName = _uiState.value.registrationLastName.trim()
+        if (_uiState.value.isLoading) return
+        val firstName = _uiState.value.registrationFirstName.trim().take(64)
+        val lastName = _uiState.value.registrationLastName.trim().take(64)
         if (firstName.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Enter your first name to continue.") }
             return
@@ -384,8 +438,9 @@ class TelegramViewModel(
     }
 
     fun submitPhoneNumber() {
+        if (_uiState.value.isLoading) return
         val phone = _uiState.value.phoneInput.trim()
-        if (phone.length < 8 || !phone.startsWith("+")) {
+        if (phone.length < 9 || !phone.startsWith("+") || phone.drop(1).length !in 7..15) {
             _uiState.update {
                 it.copy(errorMessage = "Enter phone number in international format starting with + (e.g. +1234567890)")
             }
@@ -402,8 +457,9 @@ class TelegramViewModel(
     }
 
     fun submitCode() {
+        if (_uiState.value.isLoading) return
         val code = _uiState.value.codeInput.trim()
-        if (code.isBlank()) {
+        if (code.length !in 4..8) {
             _uiState.update { it.copy(errorMessage = "Verification code cannot be empty") }
             return
         }
@@ -418,6 +474,7 @@ class TelegramViewModel(
     }
 
     fun submitPassword() {
+        if (_uiState.value.isLoading) return
         val password = _uiState.value.passwordInput
         if (password.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Password cannot be empty") }

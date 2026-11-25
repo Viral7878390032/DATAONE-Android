@@ -5,6 +5,7 @@ package com.example.feature.telegram.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.BitmapFactory
@@ -198,6 +199,17 @@ private fun copyTelegramAttachment(
 }
 
 // Premium Dark Theme Palette for DATAONE Telegram Module
+private fun decodeTelegramAvatar(path: String?): android.graphics.Bitmap? {
+    if (path.isNullOrBlank()) return null
+    return runCatching {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        var sample = 1
+        while (bounds.outWidth / sample > 160 || bounds.outHeight / sample > 160) sample *= 2
+        BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample.coerceAtLeast(1) })
+    }.getOrNull()
+}
+
 private val BackgroundDark = Color(0xFF0B111A)
 private val SurfaceDark = Color(0xFF131B27)
 private val SurfaceCard = Color(0xFF182333)
@@ -227,6 +239,10 @@ fun TelegramScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    BackHandler(enabled = uiState.authState !is TelegramAuthState.Authenticated) {
+        Toast.makeText(LocalContext.current, "Complete Telegram sign-in to continue.", Toast.LENGTH_SHORT).show()
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
@@ -962,6 +978,32 @@ private fun AuthenticatedUserCard(
     var editTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
     var editDraft by remember(selectedChatId) { mutableStateOf("") }
     var deleteTarget by remember(selectedChatId) { mutableStateOf<com.example.feature.telegram.model.TelegramMessage?>(null) }
+    BackHandler(enabled = selectedChatId != null || showTelegramSettings || showNewChatDialog || showCreateGroupDialog || showAddGroupMembersDialog || showLeaveGroupConfirmation || showChatDetails || showSharedMedia || selectedSharedMediaMessage != null || showConversationSearch || showAttachmentMenu || deleteTarget != null || editTarget != null || forwardTarget != null || isRecordingVoice) {
+        when {
+            selectedSharedMediaMessage != null -> selectedSharedMediaMessage = null
+            showLeaveGroupConfirmation -> showLeaveGroupConfirmation = false
+            showAddGroupMembersDialog -> showAddGroupMembersDialog = false
+            showCreateGroupDialog -> showCreateGroupDialog = false
+            showNewChatDialog -> showNewChatDialog = false
+            showTelegramSettings -> showTelegramSettings = false
+            showChatDetails -> showChatDetails = false
+            deleteTarget != null -> deleteTarget = null
+            editTarget != null -> { editTarget = null; editDraft = "" }
+            forwardTarget != null -> forwardTarget = null
+            showAttachmentMenu -> showAttachmentMenu = false
+            isRecordingVoice -> {
+                runCatching { voiceRecorder?.stop() }
+                runCatching { voiceRecorder?.release() }
+                voiceRecorder = null
+                voiceRecordingFile?.let { runCatching { it.delete() } }
+                voiceRecordingFile = null
+                isRecordingVoice = false
+            }
+            showConversationSearch -> { showConversationSearch = false; conversationSearchQuery = "" }
+            showSharedMedia -> { showSharedMedia = false; sharedMediaTab = "All"; selectedChatId?.let(onOpenChat) }
+            selectedChatId != null -> onCloseChat()
+        }
+    }
     if (showCreateGroupDialog) {
         AlertDialog(
             onDismissRequest = { showCreateGroupDialog = false; groupTitle = ""; selectedGroupMembers = emptySet() },
@@ -1232,7 +1274,7 @@ private fun AuthenticatedUserCard(
                 ) {
                     val accountAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, user.profilePhotoLocalPath) {
                         value = if (user.profilePhotoLocalPath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
-                            runCatching { BitmapFactory.decodeFile(user.profilePhotoLocalPath) }.getOrNull()
+                            decodeTelegramAvatar(user.profilePhotoLocalPath)
                         }
                     }
                     Box(
@@ -1448,7 +1490,7 @@ private fun AuthenticatedUserCard(
                             ) {
                                 val chatAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, chat.photoFilePath) {
                                     value = if (chat.photoFilePath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
-                                        runCatching { BitmapFactory.decodeFile(chat.photoFilePath) }.getOrNull()
+                                        decodeTelegramAvatar(chat.photoFilePath)
                                     }
                                 }
                                 Box(
@@ -1553,7 +1595,7 @@ private fun AuthenticatedUserCard(
                     }
                     val conversationAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, activeChat?.photoFilePath) {
                         value = if (activeChat?.photoFilePath.isNullOrBlank()) null else withContext(Dispatchers.IO) {
-                            runCatching { BitmapFactory.decodeFile(activeChat?.photoFilePath) }.getOrNull()
+                            decodeTelegramAvatar(activeChat?.photoFilePath)
                         }
                     }
                     Box(

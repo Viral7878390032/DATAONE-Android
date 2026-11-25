@@ -8,6 +8,8 @@ import com.example.feature.telegram.model.TelegramMessage
 import com.example.feature.telegram.model.TelegramUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.async
@@ -44,6 +46,7 @@ class NativeTdLibBridge : TelegramClientBridge {
     private val _messages = MutableStateFlow<List<TelegramMessage>>(emptyList())
     override val messages: StateFlow<List<TelegramMessage>> = _messages.asStateFlow()
     @Volatile private var selectedChatId: Long? = null
+    @Volatile private var chatRefreshJob: Job? = null
     private val messageCache = LinkedHashMap<Long, List<TelegramMessage>>()
     @Volatile private var isLoadingOlderHistory = false
     @Volatile private var hasMoreChatHistory = true
@@ -95,13 +98,13 @@ class NativeTdLibBridge : TelegramClientBridge {
                             is TdApi.UpdateAuthorizationState ->
                                 scope.launch { handleAuthorizationState(update.authorizationState) }
                             is TdApi.UpdateFile -> updateMessageFile(update.file)
-                            is TdApi.UpdateNewChat -> scope.launch { refreshChats() }
-                            is TdApi.UpdateChatLastMessage -> scope.launch { refreshChats() }
+                            is TdApi.UpdateNewChat -> scheduleChatsRefresh()
+                            is TdApi.UpdateChatLastMessage -> scheduleChatsRefresh()
                             is TdApi.UpdateNewMessage -> {
                                 if (update.message.chatId == selectedChatId) {
                                     replaceLiveMessage(update.message)
                                 } else {
-                                    scope.launch { refreshChats() }
+                                    scheduleChatsRefresh()
                                 }
                             }
                             is TdApi.UpdateMessageContent -> {
@@ -114,14 +117,14 @@ class NativeTdLibBridge : TelegramClientBridge {
                                 if (update.message.chatId == selectedChatId) {
                                     replaceLiveMessage(update.message, update.oldMessageId)
                                 } else {
-                                    scope.launch { refreshChats() }
+                                    scheduleChatsRefresh()
                                 }
                             }
                             is TdApi.UpdateMessageSendFailed -> {
                                 if (update.message.chatId == selectedChatId) {
                                     replaceLiveMessage(update.message, update.oldMessageId)
                                 } else {
-                                    scope.launch { refreshChats() }
+                                    scheduleChatsRefresh()
                                 }
                             }
                             is TdApi.UpdateDeleteMessages -> {
@@ -129,7 +132,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     val removedIds = update.messageIds.toSet()
                                     _messages.update { current -> current.filterNot { it.id in removedIds } }
                                 }
-                                scope.launch { refreshChats() }
+                                scheduleChatsRefresh()
                             }
                             is TdApi.UpdateChatReadInbox -> {
                                 _chats.update { current ->
@@ -146,7 +149,7 @@ class NativeTdLibBridge : TelegramClientBridge {
                                 }
                             }
                             is TdApi.UpdateChatPosition -> {
-                                scope.launch { refreshChats() }
+                                scheduleChatsRefresh()
                             }
                         }
                     },
@@ -169,6 +172,18 @@ class NativeTdLibBridge : TelegramClientBridge {
             Log.e(tag, "Unable to create TDLib client.", error)
             _authState.value = TelegramAuthState.Error(error.message ?: "Unable to start Telegram engine.")
             Result.failure(error)
+        }
+    }
+
+    /**
+     * TDLib emits chat-position and last-message updates in bursts. Coalesce
+     * those events into one bounded refresh instead of overlapping list loads.
+     */
+    private fun scheduleChatsRefresh() {
+        chatRefreshJob?.cancel()
+        chatRefreshJob = scope.launch {
+            delay(250)
+            refreshChats()
         }
     }
 

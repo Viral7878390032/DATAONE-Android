@@ -279,6 +279,7 @@ fun TelegramScreen(
                         messages = uiState.messages,
                         selectedChatId = uiState.selectedChatId,
                         isLoadingChats = uiState.isLoadingChats,
+                        isSendingMessage = uiState.isSendingMessage,
                         messageDraft = uiState.messageDraft,
                         onMessageDraftChange = { viewModel.onMessageDraftChanged(it) },
                         onSendMessage = { replyToId -> viewModel.sendMessage(replyToId) },
@@ -719,6 +720,7 @@ private fun AuthenticatedUserCard(
     messages: List<com.example.feature.telegram.model.TelegramMessage>,
     selectedChatId: Long?,
     isLoadingChats: Boolean,
+    isSendingMessage: Boolean,
     messageDraft: String,
     onMessageDraftChange: (String) -> Unit,
     onSendMessage: (Long?) -> Unit,
@@ -2198,7 +2200,7 @@ private fun AuthenticatedUserCard(
                                 audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
                         },
-                        enabled = !isLoadingChats,
+                        enabled = !isSendingMessage,
                         modifier = Modifier.size(42.dp).clip(CircleShape)
                             .background(if (isRecordingVoice) Color(0xFF4A2028) else SurfaceCard)
                             .border(
@@ -2234,15 +2236,15 @@ private fun AuthenticatedUserCard(
                     Box {
                         IconButton(
                             onClick = { showAttachmentMenu = true },
-                            enabled = !isLoadingChats && !isRecordingVoice,
+                            enabled = !isSendingMessage && !isRecordingVoice,
                             modifier = Modifier.size(42.dp).clip(CircleShape)
-                                .background(if (isLoadingChats || isRecordingVoice) SurfaceDark else SurfaceCard)
+                                .background(if (isSendingMessage || isRecordingVoice) SurfaceDark else SurfaceCard)
                                 .border(1.dp, BorderHairline, CircleShape)
                         ) {
                             Icon(
                                 Icons.Default.AttachFile,
                                 contentDescription = "Attach media or file",
-                                tint = if (isLoadingChats || isRecordingVoice) TextMuted else TelegramBlue,
+                                tint = if (isSendingMessage || isRecordingVoice) TextMuted else TelegramBlue,
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -2275,14 +2277,14 @@ private fun AuthenticatedUserCard(
                     }
                     IconButton(
                         onClick = { onSendMessage(replyTarget?.id); replyTarget = null },
-                        enabled = messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice,
+                        enabled = messageDraft.isNotBlank() && !isSendingMessage && !isRecordingVoice,
                         modifier = Modifier
                             .padding(start = 4.dp)
                             .size(44.dp)
                             .clip(CircleShape)
                             .background(
                                 Brush.linearGradient(
-                                    if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
+                                    if (messageDraft.isNotBlank() && !isSendingMessage && !isRecordingVoice) {
                                         listOf(TelegramBlue, TelegramBlueGradiantEnd)
                                     } else {
                                         listOf(SurfaceCard, SurfaceCard)
@@ -2291,7 +2293,7 @@ private fun AuthenticatedUserCard(
                             )
                             .border(
                                 width = 1.dp,
-                                color = if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) {
+                                color = if (messageDraft.isNotBlank() && !isSendingMessage && !isRecordingVoice) {
                                     Color.White.copy(alpha = 0.18f)
                                 } else {
                                     BorderHairline
@@ -2302,7 +2304,7 @@ private fun AuthenticatedUserCard(
                         Icon(
                             Icons.Default.Send,
                             contentDescription = "Send message",
-                            tint = if (messageDraft.isNotBlank() && !isLoadingChats && !isRecordingVoice) Color.White else TextMuted,
+                            tint = if (messageDraft.isNotBlank() && !isSendingMessage && !isRecordingVoice) Color.White else TextMuted,
                             modifier = Modifier.size(19.dp)
                         )
                     }

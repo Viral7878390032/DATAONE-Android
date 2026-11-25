@@ -2328,7 +2328,7 @@ private fun SharedMediaGalleryGrid(
                 Icon(Icons.Default.Image, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(34.dp))
                 Spacer(Modifier.height(10.dp))
                 Text("No shared media yet", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text("Photos and videos shared here will appear in this gallery.", color = TextSecondary, fontSize = 12.sp)
+                Text("Photos, videos, GIFs and stickers shared here will appear in this gallery.", color = TextSecondary, fontSize = 12.sp)
             }
         }
         return
@@ -2385,7 +2385,7 @@ private fun SharedMediaGalleryGrid(
                     }
                 }
                 val videoDurationLabel by produceState<String?>(null, thumbnailPath, message.mediaType) {
-                    value = if (message.mediaType == "video" && !thumbnailPath.isNullOrBlank()) {
+                    value = if (message.mediaType in listOf("video", "animation") && !thumbnailPath.isNullOrBlank()) {
                         withContext(Dispatchers.IO) {
                             val retriever = android.media.MediaMetadataRetriever()
                             try {
@@ -2416,14 +2416,14 @@ private fun SharedMediaGalleryGrid(
                     if (thumbnail != null) {
                         Image(
                             bitmap = thumbnail!!,
-                            contentDescription = if (message.mediaType == "video") "Shared video thumbnail" else "Shared photo",
+                            contentDescription = when (message.mediaType) { "video" -> "Shared video thumbnail"; "animation" -> "Shared GIF preview"; "sticker" -> "Shared sticker"; else -> "Shared photo" },
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     } else {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = if (message.mediaType == "video") Icons.Default.VideoLibrary else Icons.Default.Image,
+                                imageVector = if (message.mediaType in listOf("video", "animation")) Icons.Default.VideoLibrary else Icons.Default.Image,
                                 contentDescription = null,
                                 tint = TelegramBlue,
                                 modifier = Modifier.size(28.dp)
@@ -2453,7 +2453,7 @@ private fun SharedMediaGalleryGrid(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            if (message.mediaType == "video") "VIDEO" else "PHOTO",
+                            when (message.mediaType) { "video" -> "VIDEO"; "animation" -> "GIF"; "sticker" -> "STICKER"; else -> "PHOTO" },
                             color = Color.White,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,

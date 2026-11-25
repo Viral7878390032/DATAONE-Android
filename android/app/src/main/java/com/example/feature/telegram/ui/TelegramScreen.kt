@@ -2651,8 +2651,13 @@ private fun TelegramDocumentContent(
         if (message.isMediaDownloading) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), color = TelegramBlue, strokeWidth = 2.dp)
-                Text("Downloading file…", color = TextSecondary, fontSize = 12.sp,
-                    modifier = Modifier.padding(start = 8.dp))
+                Text(
+                    if (message.mediaDownloadProgress > 0f) "Downloading file… ${(message.mediaDownloadProgress * 100).toInt()}%"
+                    else "Downloading file…",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
         } else if (!message.mediaFilePath.isNullOrBlank()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -2796,7 +2801,12 @@ private fun TelegramAudioContent(
             fontSize = 14.sp
         )
         if (message.isMediaDownloading) {
-            Text("Downloading audio...", color = TextSecondary, fontSize = 12.sp)
+            Text(
+                if (message.mediaDownloadProgress > 0f) "Downloading audio… ${(message.mediaDownloadProgress * 100).toInt()}%"
+                else "Downloading audio…",
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
             CircularProgressIndicator(
                 color = TelegramBlue,
                 modifier = Modifier.padding(top = 8.dp).size(20.dp),

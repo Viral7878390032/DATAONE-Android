@@ -41,12 +41,19 @@ class TelegramRepositoryImpl(
     override val isNativeLibraryAvailable: Boolean
         get() = clientBridge.isNativeLibraryAvailable
 
-    private val draftsPreferences by lazy {
+    private val legacyDraftsPreferences by lazy {
         context.getSharedPreferences("telegram_message_drafts", Context.MODE_PRIVATE)
     }
 
     override fun loadChatDrafts(): Map<Long, String> {
-        val raw = draftsPreferences.getString("drafts", null) ?: return emptyMap()
+        // Drafts can contain private conversations. Prefer encrypted storage and
+        // migrate older plaintext drafts once for users upgrading from prior builds.
+        val raw = security.getEncryptedString(KEY_ENCRYPTED_CHAT_DRAFTS)
+            ?: legacyDraftsPreferences.getString("drafts", null)?.also { legacy ->
+                security.putEncryptedString(KEY_ENCRYPTED_CHAT_DRAFTS, legacy)
+                legacyDraftsPreferences.edit().remove("drafts").apply()
+            }
+            ?: return emptyMap()
         return try {
             val json = JSONObject(raw)
             buildMap {
@@ -64,11 +71,13 @@ class TelegramRepositoryImpl(
     override fun saveChatDrafts(drafts: Map<Long, String>) {
         val json = JSONObject()
         drafts.forEach { (chatId, draft) -> if (draft.isNotEmpty()) json.put(chatId.toString(), draft) }
-        draftsPreferences.edit().putString("drafts", json.toString()).apply()
+        security.putEncryptedString(KEY_ENCRYPTED_CHAT_DRAFTS, json.toString())
+        legacyDraftsPreferences.edit().remove("drafts").apply()
     }
 
     override fun clearChatDrafts() {
-        draftsPreferences.edit().remove("drafts").apply()
+        security.removeEncryptedValue(KEY_ENCRYPTED_CHAT_DRAFTS)
+        legacyDraftsPreferences.edit().remove("drafts").apply()
     }
 
     override suspend fun startTelegram(): Unit = withContext(ioDispatcher) {
@@ -195,5 +204,9 @@ class TelegramRepositoryImpl(
 
     override suspend fun configureApiCredentials(apiId: Int, apiHash: String) = withContext(ioDispatcher) {
         security.storeApiCredentials(apiId, apiHash)
+    }
+
+    private companion object {
+        const val KEY_ENCRYPTED_CHAT_DRAFTS = "telegram_chat_drafts_encrypted_v1"
     }
 }

@@ -324,64 +324,6 @@ class TelegramViewModel(
         performMessageSend(chatId) { repository.sendDocumentMessage(chatId, path, caption) }
     }
 
-    fun sendMessage(replyToMessageId: Long? = null) {
-        val chatId = _uiState.value.selectedChatId ?: return
-        val text = _uiState.value.messageDraft.trim()
-        if (text.isBlank()) return
-        performMessageSend(chatId) {
-            repository.sendTextMessage(chatId, text, replyToMessageId)
-        }
-    }
-
-    fun forwardMessage(fromChatId: Long, messageId: Long, toChatId: Long) {
-        viewModelScope.launch {
-            val result = repository.forwardMessage(fromChatId, messageId, toChatId)
-            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
-        }
-    }
-
-    fun editTextMessage(messageId: Long, newText: String) {
-        val chatId = _uiState.value.selectedChatId ?: return
-        viewModelScope.launch {
-            val result = repository.editTextMessage(chatId, messageId, newText)
-            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
-        }
-    }
-
-    fun deleteMessage(messageId: Long) {
-        val chatId = _uiState.value.selectedChatId ?: return
-        viewModelScope.launch { val result = repository.deleteMessage(chatId, messageId); _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) } }
-    }
-    fun addMessageReaction(messageId: Long, emoji: String) {
-        val chatId = _uiState.value.selectedChatId ?: return
-        viewModelScope.launch { val result = repository.addMessageReaction(chatId, messageId, emoji); _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) } }
-    }
-    fun toggleMessagePinned(messageId: Long, isPinned: Boolean) {
-        val chatId = _uiState.value.selectedChatId ?: return
-        viewModelScope.launch {
-            val result = repository.toggleMessagePinned(chatId, messageId, isPinned)
-            _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message ?: if (result.isSuccess) null else "Unable to update pinned message.") }
-        }
-    }
-    fun sendMessage(replyToMessageId: Long? = null) {
-        if (!beginSendingMessage()) return
-        val chatId = _uiState.value.selectedChatId ?: return
-        val text = _uiState.value.messageDraft.trim()
-        if (text.isBlank()) return
-        viewModelScope.launch {
-            val result = repository.sendTextMessage(chatId, text, replyToMessageId)
-            _uiState.update {
-                it.copy(
-                    isSendingMessage = false,
-                    messageDraft = if (result.isSuccess) "" else it.messageDraft,
-                    chatDrafts = if (result.isSuccess) it.chatDrafts - chatId else it.chatDrafts,
-                    errorMessage = result.exceptionOrNull()?.message
-                )
-            }
-            repository.saveChatDrafts(_uiState.value.chatDrafts)
-        }
-    }
-
     fun startConnection() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }

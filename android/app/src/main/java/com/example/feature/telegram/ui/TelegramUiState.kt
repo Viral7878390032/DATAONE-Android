@@ -31,6 +31,7 @@ data class TelegramUiState(
     val chatDetails: TelegramChatDetails? = null,
     val isLoadingChatDetails: Boolean = false,
     val isLoadingChats: Boolean = false,
+    val isSendingMessage: Boolean = false,
     val messageDraft: String = "",
     val chatDrafts: Map<Long, String> = emptyMap()
 )

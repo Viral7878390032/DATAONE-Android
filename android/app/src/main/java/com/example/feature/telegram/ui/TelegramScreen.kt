@@ -238,10 +238,11 @@ fun TelegramScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     BackHandler(enabled = uiState.authState !is TelegramAuthState.Authenticated) {
-        Toast.makeText(LocalContext.current, "Complete Telegram sign-in to continue.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Complete Telegram sign-in to continue.", Toast.LENGTH_SHORT).show()
     }
 
     LaunchedEffect(uiState.errorMessage) {

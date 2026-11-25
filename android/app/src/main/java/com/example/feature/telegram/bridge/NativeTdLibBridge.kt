@@ -815,16 +815,29 @@ class NativeTdLibBridge : TelegramClientBridge {
         }
     }
 
-    private fun messagePreview(content: TdApi.MessageContent): String = when (content) {
-        is TdApi.MessageText -> content.text.text
-        is TdApi.MessagePhoto -> "Photo"
-        is TdApi.MessageVideo -> "Video"
-        is TdApi.MessageDocument -> content.document.fileName.ifBlank { "File" }
-        is TdApi.MessageVoiceNote -> "Voice message"
-        is TdApi.MessageAudio -> content.audio.title.ifBlank { "Audio" }
-        is TdApi.MessageAnimation -> "GIF"
-        is TdApi.MessageSticker -> "Sticker"
-        else -> "Message"
+    private fun messagePreview(content: TdApi.MessageContent): String {
+        fun captionOr(fallback: String): String =
+            when (content) {
+                is TdApi.MessagePhoto -> content.caption.text
+                is TdApi.MessageVideo -> content.caption.text
+                is TdApi.MessageAnimation -> content.caption.text
+                is TdApi.MessageDocument -> content.caption.text
+                is TdApi.MessageAudio -> content.caption.text
+                is TdApi.MessageVoiceNote -> content.caption.text
+                else -> ""
+            }.trim().ifBlank { fallback }
+
+        return when (content) {
+            is TdApi.MessageText -> content.text.text
+            is TdApi.MessagePhoto -> captionOr("Photo")
+            is TdApi.MessageVideo -> captionOr("Video")
+            is TdApi.MessageDocument -> captionOr(content.document.fileName.ifBlank { "File" })
+            is TdApi.MessageVoiceNote -> captionOr("Voice message")
+            is TdApi.MessageAudio -> captionOr(content.audio.title.ifBlank { "Audio" })
+            is TdApi.MessageAnimation -> captionOr("GIF")
+            is TdApi.MessageSticker -> "Sticker"
+            else -> "Message"
+        }
     }
 
     override suspend fun downloadFileOnDemand(fileId: Int, priority: Int): Result<Unit> {

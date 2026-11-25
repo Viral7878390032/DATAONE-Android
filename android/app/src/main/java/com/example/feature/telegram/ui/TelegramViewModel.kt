@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.feature.telegram.data.TelegramRepository
 import com.example.feature.telegram.model.TelegramAuthState
 import com.example.feature.telegram.model.TelegramUser
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +26,8 @@ class TelegramViewModel(
         )
     )
     val uiState: StateFlow<TelegramUiState> = _uiState.asStateFlow()
+
+    private var refreshChatsJob: Job? = null
 
     init {
         observeAuthState()
@@ -113,7 +116,8 @@ class TelegramViewModel(
     }
 
     fun refreshChats() {
-        viewModelScope.launch {
+        if (refreshChatsJob?.isActive == true) return
+        refreshChatsJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
             val result = repository.refreshChats()
             _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }

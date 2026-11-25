@@ -849,7 +849,8 @@ class NativeTdLibBridge : TelegramClientBridge {
             isMediaDownloaded = localFile?.isDownloadingCompleted == true,
             isMediaDownloading = localFile?.isDownloadingActive == true,
             mediaDownloadProgress = localFile?.let { local ->
-                if (local.expectedSize > 0L) (local.downloadedSize.toFloat() / local.expectedSize.toFloat()).coerceIn(0f, 1f) else 0f
+                val expectedSize = (photoFile ?: videoFile ?: animationFile ?: stickerFile ?: documentFile ?: audioFile)?.expectedSize ?: 0L
+                if (expectedSize > 0L) (local.downloadedPrefixSize.toFloat() / expectedSize.toFloat()).coerceIn(0f, 1f) else 0f
             } ?: 0f,
             previewFileId = previewFile?.id ?: videoPreviewFile?.id ?: animationPreviewFile?.id,
             previewFilePath = (previewFile?.local ?: videoPreviewFile?.local ?: animationPreviewFile?.local)?.let { local -> local.path.takeIf { local.isDownloadingCompleted && it.isNotBlank() } },
@@ -924,8 +925,8 @@ class NativeTdLibBridge : TelegramClientBridge {
                         mediaFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() },
                         isMediaDownloaded = file.local.isDownloadingCompleted,
                         isMediaDownloading = file.local.isDownloadingActive,
-                        mediaDownloadProgress = if (file.local.expectedSize > 0L) {
-                            (file.local.downloadedSize.toFloat() / file.local.expectedSize.toFloat()).coerceIn(0f, 1f)
+                        mediaDownloadProgress = if (file.expectedSize > 0L) {
+                            (file.local.downloadedPrefixSize.toFloat() / file.expectedSize.toFloat()).coerceIn(0f, 1f)
                         } else 0f
                     )
                     message.previewFileId == file.id -> message.copy(previewFilePath = file.local.path.takeIf { file.local.isDownloadingCompleted && it.isNotBlank() })

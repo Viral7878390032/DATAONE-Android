@@ -28,6 +28,10 @@ class TelegramViewModel(
     val uiState: StateFlow<TelegramUiState> = _uiState.asStateFlow()
 
     private var refreshChatsJob: Job? = null
+    private var openChatJob: Job? = null
+    private var chatDetailsJob: Job? = null
+    private var olderMessagesJob: Job? = null
+    private var refreshChatsAgain = false
 
     init {
         observeAuthState()
@@ -116,11 +120,23 @@ class TelegramViewModel(
     }
 
     fun refreshChats() {
-        if (refreshChatsJob?.isActive == true) return
+        if (refreshChatsJob?.isActive == true) {
+            refreshChatsAgain = true
+            return
+        }
         refreshChatsJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoadingChats = true, errorMessage = null) }
-            val result = repository.refreshChats()
-            _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
+            var latestError: String? = null
+            do {
+                refreshChatsAgain = false
+                val result = try {
+                    repository.refreshChats()
+                } catch (error: Exception) {
+                    Result.failure(error)
+                }
+                latestError = result.exceptionOrNull()?.message
+            } while (refreshChatsAgain)
+            _uiState.update { it.copy(isLoadingChats = false, errorMessage = latestError) }
         }
     }
 
@@ -161,36 +177,50 @@ class TelegramViewModel(
     }
 
     fun loadChatDetails(chatId: Long) {
-        viewModelScope.launch {
+        chatDetailsJob?.cancel()
+        chatDetailsJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoadingChatDetails = true, chatDetails = null, errorMessage = null) }
-            val result = repository.getChatDetails(chatId)
-            _uiState.update {
-                it.copy(
-                    isLoadingChatDetails = false,
-                    chatDetails = result.getOrNull(),
-                    errorMessage = result.exceptionOrNull()?.message
-                )
+            val result = try {
+                repository.getChatDetails(chatId)
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            if (_uiState.value.selectedChatId == chatId) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingChatDetails = false,
+                        chatDetails = result.getOrNull(),
+                        errorMessage = result.exceptionOrNull()?.message
+                    )
+                }
             }
         }
     }
 
     fun openChat(chatId: Long) {
-        viewModelScope.launch {
+        openChatJob?.cancel()
+        openChatJob = viewModelScope.launch {
             _uiState.update { current ->
-                val drafts = current.selectedChatId?.let { drafts ->
-                    current.chatDrafts + (current.selectedChatId to current.messageDraft)
-                } ?: current.chatDrafts
+                val drafts = current.selectedChatId?.let { current.chatDrafts + (it to current.messageDraft) } ?: current.chatDrafts
                 current.copy(
                     isLoadingChats = true,
                     selectedChatId = chatId,
                     messageDraft = drafts[chatId].orEmpty(),
                     chatDrafts = drafts,
+                    chatDetails = null,
+                    isLoadingChatDetails = false,
                     errorMessage = null
                 )
             }
             repository.saveChatDrafts(_uiState.value.chatDrafts)
-            val result = repository.openChat(chatId)
-            _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
+            val result = try {
+                repository.openChat(chatId)
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            if (_uiState.value.selectedChatId == chatId) {
+                _uiState.update { it.copy(isLoadingChats = false, errorMessage = result.exceptionOrNull()?.message) }
+            }
         }
     }
 
@@ -216,9 +246,14 @@ class TelegramViewModel(
 
     fun loadOlderMessages() {
         val chatId = _uiState.value.selectedChatId ?: return
-        viewModelScope.launch {
-            val result = repository.loadOlderMessages(chatId)
-            if (result.isFailure) {
+        if (olderMessagesJob?.isActive == true) return
+        olderMessagesJob = viewModelScope.launch {
+            val result = try {
+                repository.loadOlderMessages(chatId)
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            if (_uiState.value.selectedChatId == chatId && result.isFailure) {
                 _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
             }
         }

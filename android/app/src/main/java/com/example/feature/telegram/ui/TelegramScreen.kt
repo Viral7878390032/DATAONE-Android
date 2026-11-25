@@ -1835,7 +1835,7 @@ private fun AuthenticatedUserCard(
                     }
                 if (selectedSharedMediaMessage != null) {
                     val selected = selectedSharedMediaMessage!!
-                    val galleryItems = filteredMessages.filter { it.mediaType == "photo" || it.mediaType == "video" }.sortedByDescending { it.date }
+                    val galleryItems = filteredMessages.filter { it.mediaType in listOf("photo", "sticker", "video", "animation") }.sortedByDescending { it.date }
                     val selectedIndex = galleryItems.indexOfFirst { it.id == selected.id }
                     Dialog(onDismissRequest = { selectedSharedMediaMessage = null }) {
                         Column(

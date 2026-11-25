@@ -1250,6 +1250,8 @@ private fun AuthenticatedUserCard(
                     }
                     Spacer(modifier = Modifier.width(11.dp))
                     Column(modifier = Modifier.weight(1f)) {
+                        Text("DATAONE  •  TELEGRAM", color = AccentCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.35.sp)
+                        Spacer(modifier = Modifier.height(3.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(user.displayName.ifBlank { user.firstName }, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp, maxLines = 1)
                             if (user.isVerified) {
@@ -1259,8 +1261,11 @@ private fun AuthenticatedUserCard(
                         }
                         Text(
                             user.username?.let { "@$it" } ?: user.phoneNumber.ifBlank { "Telegram account" },
-                            color = TextSecondary, fontSize = 12.sp, maxLines = 1
+                            color = TextSecondary, fontSize = 11.sp, maxLines = 1
                         )
+                    }
+                    IconButton(onClick = { showTelegramSettings = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Telegram settings", tint = TextSecondary)
                     }
                     IconButton(onClick = onRefreshChats, enabled = !isLoadingChats) {
                         if (isLoadingChats) CircularProgressIndicator(color = TelegramBlue, modifier = Modifier.size(19.dp), strokeWidth = 2.dp)
@@ -1275,14 +1280,14 @@ private fun AuthenticatedUserCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Messages",
+                            "Your conversations",
                             color = TextPrimary,
-                            fontSize = 26.sp,
+                            fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = (-0.5).sp
+                            letterSpacing = (-0.55).sp
                         )
                         Text(
-                            "${chats.size} conversations  •  ${unreadChatsCount} unread",
+                            "${chats.size} chats  •  ${unreadChatsCount} unread",
                             color = TextSecondary,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(top = 3.dp)
@@ -1468,12 +1473,12 @@ private fun AuthenticatedUserCard(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(Brush.horizontalGradient(listOf(SurfaceCard, SurfaceDark)))
-                                    .border(1.dp, BorderHairline.copy(alpha = 0.82f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 12.dp, vertical = 2.dp)
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(Brush.horizontalGradient(listOf(SurfaceCard.copy(alpha = 0.88f), SurfaceDark.copy(alpha = 0.96f))))
+                                    .border(1.dp, BorderHairline.copy(alpha = 0.58f), RoundedCornerShape(18.dp))
                                     .clickable { onOpenChat(chat.id) }
-                                    .padding(horizontal = 13.dp, vertical = 12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val chatAvatar by produceState<android.graphics.Bitmap?>(initialValue = null, chat.photoFilePath) {
@@ -1482,7 +1487,7 @@ private fun AuthenticatedUserCard(
                                     }
                                 }
                                 Box(
-                                    modifier = Modifier.size(54.dp).clip(CircleShape)
+                                    modifier = Modifier.size(52.dp).clip(CircleShape)
                                         .background(Brush.linearGradient(listOf(TelegramBlue.copy(alpha = 0.9f), AccentCyan.copy(alpha = 0.65f)))),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -1552,8 +1557,9 @@ private fun AuthenticatedUserCard(
                     }
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(SurfaceDark)
-                        .border(1.dp, BorderHairline).padding(horizontal = 8.dp, vertical = 9.dp),
+                    modifier = Modifier.fillMaxWidth().background(
+                        Brush.verticalGradient(listOf(SurfaceCard, SurfaceDark))
+                    ).border(1.dp, BorderHairline).padding(horizontal = 8.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

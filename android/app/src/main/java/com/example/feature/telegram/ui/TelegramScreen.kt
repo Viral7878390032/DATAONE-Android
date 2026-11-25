@@ -2252,8 +2252,10 @@ private fun AuthenticatedUserCard(
                                     else Toast.makeText(context, "No voice audio was captured.", Toast.LENGTH_SHORT).show()
                                 } catch (error: Exception) {
                                     Toast.makeText(context, error.message ?: "Recording could not be saved.", Toast.LENGTH_LONG).show()
-                                    voiceRecorder?.release()
+                                    runCatching { voiceRecorder?.release() }
                                     voiceRecorder = null
+                                    voiceRecordingFile?.let { runCatching { it.delete() } }
+                                    voiceRecordingFile = null
                                     isRecordingVoice = false
                                 }
                             } else {

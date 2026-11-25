@@ -1,20 +1,40 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# DATAONE Android
 
-# Run and deploy your AI Studio app
+DATAONE is an Android app shell with a native Telegram client powered by TDLib. Telegram sign-in, chats, messaging, shared media, and on-demand media loading are implemented in the Android module.
 
-This contains everything you need to run your app locally.
+## Build the Android APK
 
-View your app in AI Studio: https://ai.studio/apps/f579575a-2e8a-407a-b504-cf0445e13c6f
+The project is built in GitHub Actions; Android Studio is not required.
 
-## Run Locally
+1. Open the **Actions** tab in this repository.
+2. Select **Build DATAONE Android APK**.
+3. Run the workflow on the `main` branch (or push a commit).
+4. Open the successful workflow run and download the `app-debug.apk` artifact.
+5. Install the APK on an Android device.
 
-**Prerequisites:**  Node.js
+## Telegram API credentials
 
+TDLib requires Telegram API credentials from Telegram's official developer portal. Add these repository Actions secrets:
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- `TELEGRAM_API_ID`
+- `TELEGRAM_API_HASH`
+
+Keep these values private. Do not commit them into source files. The workflow passes them to the Android build.
+
+## Current scope
+
+- Telegram authentication using phone number, login code, and optional two-step verification.
+- Chat list, contacts, private and group chats.
+- Text messaging and supported media/document/voice sending.
+- Message actions and shared media browsing.
+- Photos, videos, GIFs, stickers, audio, voice messages, and documents.
+- Media is requested on demand rather than automatically downloaded in the background.
+
+## Important testing note
+
+A successful GitHub Actions build verifies that the APK compiles. Telegram sign-in, account-specific permissions, message delivery, playback, and device behavior still need to be tested on a real Android device with a Telegram account.
+
+## Repository layout
+
+- `android/` — native Android application.
+- `src/`, `index.html`, `vite.config.ts` — separate web preview project.

@@ -101,6 +101,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -760,6 +761,35 @@ private fun AuthenticatedUserCard(
     var voiceRecordingStartedAt by remember { mutableStateOf(0L) }
     var isRecordingVoice by remember { mutableStateOf(false) }
     var showAttachmentMenu by remember { mutableStateOf(false) }
+
+    // Remove abandoned temporary attachment copies after a generous retention window.
+    // Files newer than seven days are kept so large/slow Telegram uploads are not interrupted.
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val cutoff = System.currentTimeMillis() - 7L * 24L * 60L * 60L * 1000L
+            context.cacheDir.listFiles()?.filter { file ->
+                file.isFile && file.name.startsWith("telegram-") && file.lastModified() < cutoff
+            }?.forEach { file -> runCatching { file.delete() } }
+        }
+    }
+
+    // If the user leaves the chat while recording, release the microphone and discard
+    // the unfinished recording instead of leaking the recorder or keeping a broken file.
+    DisposableEffect(Unit) {
+        onDispose {
+            if (isRecordingVoice) {
+                runCatching { voiceRecorder?.stop() }
+                runCatching { voiceRecorder?.release() }
+                voiceRecorder = null
+                voiceRecordingFile?.let { runCatching { it.delete() } }
+                voiceRecordingFile = null
+                isRecordingVoice = false
+            } else {
+                runCatching { voiceRecorder?.release() }
+                voiceRecorder = null
+            }
+        }
+    }
     val audioPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
             try {

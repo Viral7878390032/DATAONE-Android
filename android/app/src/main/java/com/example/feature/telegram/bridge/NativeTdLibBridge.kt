@@ -324,27 +324,22 @@ class NativeTdLibBridge : TelegramClientBridge {
     } catch (error: Throwable) { Result.failure(error) }
 
     override suspend fun refreshChats(): Result<Unit> = try {
-        // Load every available page from both TDLib chat lists before reading IDs.
-        // GetChats only returns chats already loaded into TDLib's local chat list;
-        // LoadChats asks TDLib to continue loading older entries from the server.
-        suspend fun loadAllChats(chatList: TdApi.ChatList) {
-            repeat(100) {
-                try {
-                    sendRequest(TdApi.LoadChats(chatList, 1000))
-                } catch (error: Throwable) {
-                    // TDLib returns 404 when this list has no more chats to load.
-                    if (error.message.orEmpty().contains("404")) return
-                    throw error
-                }
+        // Load one bounded page from each list; exhaustive warm-up caused
+        // thousands of requests and delayed the first useful chat list.
+        suspend fun loadFirstPage(chatList: TdApi.ChatList) {
+            try {
+                sendRequest(TdApi.LoadChats(chatList, 100))
+            } catch (error: Throwable) {
+                if (!error.message.orEmpty().contains("404")) throw error
             }
         }
-        loadAllChats(TdApi.ChatListMain())
-        loadAllChats(TdApi.ChatListArchive())
+        loadFirstPage(TdApi.ChatListMain())
+        loadFirstPage(TdApi.ChatListArchive())
 
-        val mainResult = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 1000)) as TdApi.Chats
-        val archiveResult = sendRequest(TdApi.GetChats(TdApi.ChatListArchive(), 1000)) as TdApi.Chats
+        val mainResult = sendRequest(TdApi.GetChats(TdApi.ChatListMain(), 200)) as TdApi.Chats
+        val archiveResult = sendRequest(TdApi.GetChats(TdApi.ChatListArchive(), 200)) as TdApi.Chats
         val archivedIds = archiveResult.chatIds.toSet()
-        val allChatIds = (mainResult.chatIds.toList() + archiveResult.chatIds.toList()).distinct()
+        val allChatIds = (mainResult.chatIds.toList() + archiveResult.chatIds.toList()).distinct().take(200)
         val loaded = mutableListOf<TelegramChat>()
         val semaphore = Semaphore(12)
 
@@ -357,11 +352,8 @@ class NativeTdLibBridge : TelegramClientBridge {
                                 val chat = sendRequest(TdApi.GetChat(id)) as TdApi.Chat
                                 val photoFile = chat.photo?.small
                                 val photoLocal = photoFile?.local
-                                val presence = when (val type = chat.type) {
-                                    is TdApi.ChatTypePrivate -> userPresence(type.userId)
-                                    is TdApi.ChatTypeSecret -> userPresence(type.userId)
-                                    else -> null
-                                }
+                                // Presence lookups require extra network requests per private chat.
+                                // Keep first paint fast; load detailed presence only when needed.
                                 val completedPhotoPath = photoLocal?.let { local ->
                                     if (local.isDownloadingCompleted && local.path.isNotBlank()) local.path else null
                                 }
@@ -378,8 +370,8 @@ class NativeTdLibBridge : TelegramClientBridge {
                                     unreadMentionCount = chat.unreadMentionCount,
                                     photoFileId = photoFile?.id ?: 0,
                                     photoFilePath = completedPhotoPath,
-                                    presenceText = presence?.first,
-                                    isOnline = presence?.second == true
+                                    presenceText = null,
+                                    isOnline = false
                                 )
                             } catch (error: Throwable) {
                                 Log.w(tag, "Could not load Telegram chat $id", error)

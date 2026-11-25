@@ -2250,6 +2250,30 @@ private fun AuthenticatedUserCard(
                         .padding(horizontal = 7.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (isRecordingVoice) {
+                        IconButton(
+                            onClick = {
+                                // Cancel means discard: never send an unfinished voice note.
+                                runCatching { voiceRecorder?.release() }
+                                voiceRecorder = null
+                                voiceRecordingFile?.let { runCatching { it.delete() } }
+                                voiceRecordingFile = null
+                                isRecordingVoice = false
+                                voiceRecordingStartedAt = 0L
+                                Toast.makeText(context, "Voice recording discarded.", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(42.dp).clip(CircleShape)
+                                .background(SurfaceCard)
+                                .border(1.dp, BorderHairline, CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Cancel voice recording",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = {
                             if (isRecordingVoice) {
@@ -2293,6 +2317,7 @@ private fun AuthenticatedUserCard(
                     OutlinedTextField(
                         value = messageDraft,
                         onValueChange = onMessageDraftChange,
+                        enabled = !isRecordingVoice,
                         modifier = Modifier.weight(1f).heightIn(min = 52.dp).padding(vertical = 1.dp),
                         placeholder = {
                             if (isRecordingVoice) {
